@@ -158,7 +158,8 @@ public final class SphinxDoclet implements Doclet {
       var document = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
       var root = new Xml(document.createElement("api"));
       document.appendChild(root.node());
-      root.set("schema", "1").set("extractor", "0.1.0");
+      // extractor.py stamps the package version, so the doclet has no copy to keep in sync.
+      root.set("schema", "1");
       var included =
           env.getIncludedElements().stream()
               .filter(e -> e instanceof TypeElement && visible(e, false) && !hidden(e))
@@ -690,13 +691,21 @@ public final class SphinxDoclet implements Doclet {
             .set("closed", Boolean.toString(start.isSelfClosing()));
     for (var attribute : start.getAttributes()) {
       if (attribute instanceof AttributeTree a) {
-        String value =
-            a.getValue().stream()
-                .map(v -> v instanceof EntityTree entity ? characters(entity) : v.toString())
-                .collect(Collectors.joining());
-        node.addAttr(a.getName().toString(), value);
+        node.addAttr(a.getName().toString(), attributeValue(a));
       }
     }
+  }
+
+  /**
+   * Returns the decoded attribute value; valueless attributes such as {@code compact} are empty.
+   */
+  private String attributeValue(AttributeTree attribute) {
+    if (attribute.getValueKind() == AttributeTree.ValueKind.EMPTY) {
+      return "";
+    }
+    return attribute.getValue().stream()
+        .map(v -> v instanceof EntityTree entity ? characters(entity) : v.toString())
+        .collect(Collectors.joining());
   }
 
   private void reference(
@@ -775,7 +784,7 @@ public final class SphinxDoclet implements Doclet {
     boolean supported = snippet.getBody() != null && snippet.getAttributes().size() <= 1;
     for (var attribute : snippet.getAttributes()) {
       if (attribute instanceof AttributeTree a && a.getName().contentEquals("lang")) {
-        language = a.getValue().stream().map(Object::toString).collect(Collectors.joining());
+        language = attributeValue(a);
         supported &= language.matches("[A-Za-z0-9_+.-]+");
       } else {
         supported = false;

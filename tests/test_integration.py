@@ -750,3 +750,23 @@ def test_xml_invalid_characters_are_preserved_as_unicode_escapes(tmp_path):
     assert part.find("code").text == "\\u0000"
     assert "\\u0007 rings" in "".join(t.text for t in part.findall("text"))
     assert part.find("start/attr").text == "https://example.test/\\u0001"
+
+
+def test_model_extractor_version_comes_from_the_package(tmp_path, monkeypatch):
+    from sphinx_java_autodoc import extractor
+
+    monkeypatch.setattr(extractor, "VERSION", "9.9.9")
+    source = tmp_path / "Versioned.java"
+    source.write_text("/** Versioned. */ public class Versioned {}\n")
+    path, _ = extractor.extract([source], [], tmp_path / "cache")
+    assert read_model(path).get("extractor") == "9.9.9"
+
+
+def test_valueless_html_attributes_do_not_abort_extraction(tmp_path):
+    source = tmp_path / "Compact.java"
+    source.write_text("/** <ul compact><li>one</li></ul> */\npublic class Compact {}\n")
+    path, _ = extract([source], [], tmp_path / "cache")
+    root = read_model(path)
+    start = element(root, "Compact").find("doc/part/start[@name='ul']")
+    assert start.find("attr").get("name") == "compact"
+    assert not start.find("attr").text

@@ -243,6 +243,7 @@ def extract(
         )
         diagnostics = run([tools["javadoc"], "@" + str(argfile)], cwd=work)
         root = read_model(output)
+        root.set("extractor", VERSION)
         if diagnostics.strip():
             # Compiler warnings must remain visible on cache hits too.
             message = diagnostics.strip().replace(str(work), "<extract>")
