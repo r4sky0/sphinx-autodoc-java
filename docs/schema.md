@@ -14,6 +14,8 @@ not a general XML document interchange service. No external entities are fetched
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
   `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.
+  Throws labels name the overriding method's exception after generic substitution;
+  type variables use their declared names. This preserves the schema 1 structure.
 - Tokens: `text`, `literal`, `code`, `link`, `start`, `end`. Text is element text,
   never serialized HTML to inject. `start`/`end` carry HTML element `name`;
   `start` may contain `attr name="href"` text and a `closed` flag.

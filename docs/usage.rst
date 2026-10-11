@@ -276,6 +276,10 @@ native nodes. Literal text is never interpreted as RST, and raw HTML is not emit
 
 Overriding methods inherit omitted descriptions, parameters, returns and declared
 throws documentation. Parameter matching is positional, so renamed parameters work.
+Generic exception types are substituted through the compiler's view of the parent
+method: ``Contract<E>`` implemented as ``Contract<IOException>`` can supply
+``@throws IOException`` documentation. Method exception type parameters are matched
+by position, and inherited throws labels use the overriding method's exception.
 The default search follows the JDK 25 rule; ``{@inheritDoc SomeSupertype}`` selects
 a supertype explicitly. Links in inherited prose resolve in the original author's
 scope. Class and constructor comments do not inherit. Explicit unresolved inheritance

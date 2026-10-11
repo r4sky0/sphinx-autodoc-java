@@ -231,6 +231,32 @@ public final class SphinxDoclet implements Doclet {
         }
         return null;
     }
+    private String inheritedKey(ExecutableElement child, ExecutableElement ancestor, String key) {
+        if (!key.startsWith("throws:")) return key;
+        TypeMirror requested = null;
+        for (var t : child.getThrownTypes()) if (key.equals("throws:" + id(types.asElement(t)))) requested = t;
+        if (requested == null) {
+            var type = elements.getTypeElement(key.substring(7));
+            if (type != null) requested = type.asType();
+        }
+        if (requested == null) return key;
+        var member = (ExecutableType)types.asMemberOf((DeclaredType)child.getEnclosingElement().asType(), ancestor);
+        String subtypeMatch = key;
+        for (int i = 0; i < ancestor.getThrownTypes().size(); i++) {
+            var declared = ancestor.getThrownTypes().get(i);
+            if (!(declared instanceof TypeVariable)) continue;
+            var substituted = member.getThrownTypes().get(i);
+            if (declared instanceof TypeVariable v && v.asElement().getEnclosingElement().equals(ancestor)) {
+                int position = ancestor.getTypeParameters().indexOf(v.asElement());
+                if (child.getTypeParameters().size() == ancestor.getTypeParameters().size())
+                    substituted = child.getTypeParameters().get(position).asType();
+            }
+            String candidate = "throws:" + id(types.asElement(declared));
+            if (types.isSameType(requested, substituted)) return candidate;
+            if (subtypeMatch.equals(key) && types.isSubtype(requested, substituted)) subtypeMatch = candidate;
+        }
+        return subtypeMatch;
+    }
     private Part findPart(Element e, String key, Set<Element> seen) {
         if (!seen.add(e)) return null;
         Part p = parts(e).get(key);
@@ -245,7 +271,7 @@ public final class SphinxDoclet implements Doclet {
         }
         if (e instanceof ExecutableElement m && e.getKind() == ElementKind.METHOD) {
             var parent = overridden(m);
-            if (parent != null) return findPart(parent, key, seen);
+            if (parent != null) return findPart(parent, inheritedKey(m, parent, key), seen);
         }
         return null;
     }
@@ -259,7 +285,7 @@ public final class SphinxDoclet implements Doclet {
             for (int i = 0; i < m.getParameters().size(); i++) keys.add("param:" + i);
             for (int i = 0; i < m.getTypeParameters().size(); i++) keys.add("typeparam:" + i);
             if (m.getReturnType().getKind() != TypeKind.VOID) keys.add("return");
-            for (var t : m.getThrownTypes()) keys.add("throws:" + types.erasure(t));
+            for (var t : m.getThrownTypes()) keys.add("throws:" + id(types.asElement(t)));
         }
         for (var key : keys) {
             Part part = own.get(key);
@@ -276,8 +302,9 @@ public final class SphinxDoclet implements Doclet {
                 if (index >= 0 && index < params.size()) label = params.get(index).getSimpleName().toString();
                 if (key.startsWith("typeparam:")) label = "<" + label + ">";
             }
+            if (key.startsWith("throws:")) label = key.substring(7).replaceFirst(".*#", "");
             p.setAttribute("label", label);
-            emit(p, part.owner(), key, part.trees(), new HashSet<>());
+            emit(p, part.owner(), key.startsWith("throws:") ? "throws:" + part.label() : key, part.trees(), new HashSet<>());
         }
     }
     private Element resolve(Element owner, DocTree reference) {
@@ -350,12 +377,12 @@ public final class SphinxDoclet implements Doclet {
                     if (specified instanceof TypeElement s) ancestor = search(m, (TypeElement)m.getEnclosingElement(), s, new HashSet<>());
                 }
                 String step = id(owner) + ":" + key;
-                Part inherited = ancestor == null ? null : findPart(ancestor, key, new HashSet<>());
+                Part inherited = ancestor == null ? null : findPart(ancestor, inheritedKey(m, ancestor, key), new HashSet<>());
                 if (inherited == null || !chain.add(step)) {
                     warn(owner, "Cannot resolve inheritDoc for " + key + "; provide ancestor source documentation or write this part explicitly.");
                     text(parent, "literal", "[unresolved inheritDoc]");
                 } else {
-                    emit(parent, inherited.owner(), key, inherited.trees(), chain); chain.remove(step);
+                    emit(parent, inherited.owner(), key.startsWith("throws:") ? "throws:" + inherited.label() : key, inherited.trees(), chain); chain.remove(step);
                 }
             } else if (t instanceof ReturnTree r) emit(parent, owner, "return", r.getDescription(), chain);
             else if (t.getKind() != DocTree.Kind.COMMENT) {
