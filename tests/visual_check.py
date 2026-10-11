@@ -45,7 +45,7 @@ def main():
                     theme_width = page.evaluate("document.documentElement.scrollWidth")
                     page.goto(base + "/api/type-demo.Widget.html")
                     assert page.locator("dl.java").count() >= 8
-                    assert page.get_by_text("Constructors", exact=True).count() == 1
+                    assert page.locator("h2", has_text="Constructors").count() == 1
                     assert page.locator("pre").count() > 0
                     assert page.locator("ul li ol li").count() == 2
                     assert page.locator('a[href^="#java-"]').count() > 0

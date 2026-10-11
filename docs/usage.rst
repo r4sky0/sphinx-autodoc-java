@@ -104,6 +104,25 @@ or short-name guessing is used. Omitting a method's parameter list works only wh
 there is one documented overload. Ambiguity warns instead of selecting arbitrarily.
 In Java comments, ordinary Javadoc import-sensitive references are compiler-resolved.
 
+Like Sphinx's autodoc and autosummary, there are also directives for single members
+and for summary tables:
+
+.. code-block:: rst
+
+   .. java:automethod:: com.example.Widget#find(java.lang.String,int)
+   .. java:autofield:: com.example.Widget#LABEL
+   .. java:autopackage:: com.example
+
+   .. java:autosummary::
+
+      com.example
+      com.example.Widget
+      com.example.Widget#find(java.lang.String,int)
+
+``java:autosummary`` lists packages, types or members with links and their first
+sentences; unknown entries warn as ``java.summary``. Generated pages are built from
+these directives, and each documented member appears in the page's table of contents.
+
 ``java:autopackage`` renders package comments from ``package-info.java`` and registers
 the package. Set ``java_generate`` to generate its package index and type pages
 automatically. Generated pages are owned through a content-hash manifest. Edited or

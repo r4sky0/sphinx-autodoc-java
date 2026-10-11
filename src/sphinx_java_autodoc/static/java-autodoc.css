@@ -16,3 +16,14 @@ table.java-table code .pre {
     white-space: pre;
     overflow-wrap: normal;
 }
+
+/* Java summaries: names wrap between parameters, and anywhere on small screens. */
+table.java.autosummary .pre {
+    white-space: normal;
+}
+
+@media (max-width: 600px) {
+    table.java.autosummary td {
+        overflow-wrap: anywhere;
+    }
+}

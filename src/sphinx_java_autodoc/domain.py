@@ -12,7 +12,7 @@ from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.nodes import make_refnode
 
-from .render import documentation
+from .render import deprecated, documentation, summary
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +31,103 @@ def role_for(element):
     )
 
 
-class AutoClass(SphinxDirective):
+# Member groups in display order, as section headings of generated type pages.
+MEMBER_GROUPS = {
+    "constructor": "Constructors",
+    "field": "Fields and constants",
+    "method": "Methods",
+}
+TYPE_GROUPS = {
+    "interface": "Interfaces",
+    "class": "Classes",
+    "enum": "Enums",
+    "record": "Records",
+    "annotation_type": "Annotation types",
+}
+
+
+def member_group(member) -> str:
+    kind = member.get("kind")
+    return kind if kind in {"constructor", "method"} else "field"
+
+
+def short_signature(member) -> str:
+    """The member name with simple parameter types, as in Javadoc summaries."""
+    owner, _, rest = member.get("id").partition("#")
+    name, paren, parameters = rest.partition("(")
+    if name == "<init>":
+        name = owner.rpartition(".")[2]
+    if not paren:
+        return name
+    simple = [p.rpartition(".")[2] for p in parameters.rstrip(")").split(",") if p]
+    return f"{name}({', '.join(simple)})"
+
+
+class JavaDirective(SphinxDirective):
+    def visible(self, element) -> bool:
+        visibility = self.options.get("visibility", self.config.java_visibility)
+        return visibility == "protected" or element.get("visibility") == "public"
+
+    def lookup(self, symbol, tags=("type", "type/member")):
+        model = self.env.java_model
+        self.env.note_dependency(self.env.java_model_path)
+        for tag in tags:
+            for element in model.findall(tag):
+                if element.get("id") == symbol:
+                    return element
+        return None
+
+    def missing(self, what, symbol, subtype):
+        LOGGER.warning(
+            "Java %s %s was not extracted; check java_sources and visibility.",
+            what,
+            symbol,
+            location=self.get_location(),
+            type="java",
+            subtype=subtype,
+        )
+
+    def describe(self, element):
+        symbol = element.get("id")
+        role = role_for(element)
+        desc = addnodes.desc(
+            "", domain="java", objtype=role, desctype=role, classes=["java", role]
+        )
+        sig = addnodes.desc_signature("", "", fullname=symbol)
+        sig += addnodes.desc_name("", element.get("signature"))
+        owner, _, member = symbol.partition("#")
+        # Sphinx lists objects in the page's table of contents from these attributes.
+        sig["_toc_parts"] = (owner, member) if member else (owner,)
+        sig["_toc_name"] = (
+            short_signature(element) if member else owner.rpartition(".")[2]
+        )
+        result = [desc]
+        if "no-index" not in self.options:
+            target = anchor(symbol)
+            sig["ids"].append(target)
+            self.state.document.note_explicit_target(sig)
+            domain = self.env.get_domain("java")
+            if domain.data["objects"].get(symbol):
+                LOGGER.warning(
+                    "Duplicate Java documentation for %s; use :no-index: on repeated excerpts.",
+                    symbol,
+                    location=self.get_location(),
+                    type="java",
+                    subtype="duplicate",
+                )
+            else:
+                domain.data["objects"][symbol] = (self.env.docname, target, role)
+                where = f" in {owner}" if member else ""
+                entry = f"{sig['_toc_name']} (Java {element.get('kind').replace('_', ' ')}{where})"
+                result.insert(
+                    0, addnodes.index(entries=[("single", entry, target, "", None)])
+                )
+        desc += sig
+        desc += addnodes.desc_content("", *documentation(element, self.get_location()))
+        return result
+
+
+class AutoClass(JavaDirective):
     required_arguments = 1
     option_spec = {
         "members": directives.unchanged,
@@ -41,23 +137,12 @@ class AutoClass(SphinxDirective):
     }
 
     def run(self):
-        model = self.env.java_model
         symbol = self.arguments[0].strip()
-        element = next(
-            (e for e in model.findall("type") if e.get("id") == symbol), None
-        )
+        element = self.lookup(symbol, ("type",))
         if element is None:
-            LOGGER.warning(
-                "Java type %s was not extracted; check java_sources and visibility.",
-                symbol,
-                location=self.get_location(),
-                type="java",
-                subtype="type",
-            )
+            self.missing("type", symbol, "type")
             return []
-        self.env.note_dependency(self.env.java_model_path)
-        visibility = self.options.get("visibility", self.config.java_visibility)
-        if visibility == "public" and element.get("visibility") != "public":
+        if not self.visible(element):
             return []
         result = self.describe(element)
         if "members" in self.options:
@@ -77,18 +162,9 @@ class AutoClass(SphinxDirective):
                 if selected and not names & selected:
                     continue
                 matched.update(names & selected)
-                if names & excluded or (
-                    visibility == "public" and member.get("visibility") != "public"
-                ):
+                if names & excluded or not self.visible(member):
                     continue
-                group = (
-                    "Constructors"
-                    if member.get("kind") == "constructor"
-                    else "Methods"
-                    if member.get("kind") == "method"
-                    else "Fields and constants"
-                )
-                groups.setdefault(group, []).append(member)
+                groups.setdefault(member_group(member), []).append(member)
             for missing in sorted(selected - matched):
                 LOGGER.warning(
                     "Java member %s#%s was not found.",
@@ -98,49 +174,36 @@ class AutoClass(SphinxDirective):
                     type="java",
                     subtype="member",
                 )
-            content = result[-1]
-            for title in ("Constructors", "Fields and constants", "Methods"):
-                if title not in groups:
-                    continue
-                content += nodes.rubric("", title)
-                for member in groups[title]:
-                    content += self.describe(member)
-        return [result]
-
-    def describe(self, element):
-        symbol = element.get("id")
-        role = role_for(element)
-        desc = addnodes.desc(
-            "", domain="java", objtype=role, desctype=role, classes=["java", role]
-        )
-        sig = addnodes.desc_signature("", "", fullname=symbol)
-        sig += addnodes.desc_name("", element.get("signature"))
-        if "no-index" not in self.options:
-            target = anchor(symbol)
-            sig["ids"].append(target)
-            self.state.document.note_explicit_target(sig)
-            domain = self.env.get_domain("java")
-            previous = domain.data["objects"].get(symbol)
-            if previous:
-                LOGGER.warning(
-                    "Duplicate Java documentation for %s; use :no-index: on repeated excerpts.",
-                    symbol,
-                    location=self.get_location(),
-                    type="java",
-                    subtype="duplicate",
-                )
-            else:
-                domain.data["objects"][symbol] = (self.env.docname, target, role)
-        desc += sig
-        desc += addnodes.desc_content("", *documentation(element, self.get_location()))
-        return desc
+            content = result[-1][-1]
+            for group, title in MEMBER_GROUPS.items():
+                if group in groups:
+                    content += nodes.rubric("", title)
+                    for member in groups[group]:
+                        content.extend(self.describe(member))
+        return result
 
 
-class AutoPackage(SphinxDirective):
+class AutoMember(JavaDirective):
+    """One method, constructor or field, like autodoc's automethod and autoattribute."""
+
+    required_arguments = 1
+    option_spec = {"no-index": directives.flag}
+
+    def run(self):
+        symbol = re.sub(r"\s+", "", self.arguments[0])
+        element = self.lookup(symbol.replace("...", "[]"), ("type/member",))
+        if element is None:
+            self.missing("member", symbol, "member")
+            return []
+        return self.describe(element)
+
+
+class AutoPackage(JavaDirective):
     required_arguments = 1
 
     def run(self):
         package = self.arguments[0].strip()
+        self.env.note_dependency(self.env.java_model_path)
         element = next(
             (
                 p
@@ -150,20 +213,74 @@ class AutoPackage(SphinxDirective):
             None,
         )
         if element is None:
-            LOGGER.warning(
-                "Java package %s was not extracted.",
-                package,
-                location=self.get_location(),
-                type="java",
-                subtype="package",
-            )
+            self.missing("package", package, "package")
             return []
         domain = self.env.get_domain("java")
-        self.env.note_dependency(self.env.java_model_path)
         target = nodes.target("", "", ids=[anchor(package)])
         self.state.document.note_explicit_target(target)
         domain.data["objects"][package] = (self.env.docname, anchor(package), "package")
-        return [target, *documentation(element, self.get_location())]
+        index = addnodes.index(
+            entries=[("single", f"{package} (Java package)", anchor(package), "", None)]
+        )
+        return [index, target, *documentation(element, self.get_location())]
+
+
+class AutoSummary(JavaDirective):
+    """A table of linked names and first sentences, like sphinx.ext.autosummary."""
+
+    has_content = True
+
+    def run(self):
+        model = self.env.java_model
+        self.env.note_dependency(self.env.java_model_path)
+        packages = {p.get("name"): p for p in model.findall("package")}
+        table = nodes.table("", classes=["autosummary", "longtable", "java"])
+        group = nodes.tgroup("", cols=2)
+        group += nodes.colspec("", colwidth=10)
+        group += nodes.colspec("", colwidth=90)
+        body = nodes.tbody()
+        for line in self.content:
+            symbol = re.sub(r"\s+", "", line)
+            if not symbol:
+                continue
+            element = self.lookup(symbol)
+            if element is not None:
+                owner, _, member = symbol.partition("#")
+                label = (
+                    short_signature(element)
+                    if member
+                    else symbol[len(element.get("package")) + 1 :]
+                    if element.get("package")
+                    else symbol
+                )
+            elif symbol in packages:
+                element, label = packages[symbol], symbol
+            else:
+                self.missing("object", symbol, "summary")
+                continue
+            link = addnodes.pending_xref(
+                "",
+                nodes.literal("", label, classes=["xref", "java"]),
+                refdomain="java",
+                reftype="obj",
+                reftarget=symbol,
+                refexplicit=True,
+                refwarn=True,
+            )
+            text = nodes.paragraph("")
+            if deprecated(element):
+                text += [nodes.strong("", "Deprecated."), nodes.Text(" ")]
+            text.extend(summary(element, self.get_location()))
+            body += nodes.row(
+                "",
+                nodes.entry("", nodes.paragraph("", "", link)),
+                nodes.entry("", text),
+            )
+        if not body.children:
+            return []
+        group += body
+        table += group
+        return [table]
 
 
 class JavaDomain(Domain):
@@ -177,7 +294,13 @@ class JavaDomain(Domain):
         name: XRefRole(warn_dangling=True)
         for name in ("type", "method", "field", "package", "obj")
     }
-    directives = {"autoclass": AutoClass, "autopackage": AutoPackage}
+    directives = {
+        "autoclass": AutoClass,
+        "automethod": AutoMember,
+        "autofield": AutoMember,
+        "autopackage": AutoPackage,
+        "autosummary": AutoSummary,
+    }
     initial_data = {"objects": {}}
 
     def clear_doc(self, docname):
