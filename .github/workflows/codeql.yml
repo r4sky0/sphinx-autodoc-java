@@ -54,7 +54,6 @@ jobs:
         run: |
           javac -proc:none -d "$RUNNER_TEMP/doclet" src/sphinx_java_autodoc/java/SphinxDoclet.java
           git ls-files -z 'examples/*.java' | xargs -0 javac -proc:none -d "$RUNNER_TEMP/examples"
-          git ls-files -z 'experiments/*.java' | xargs -0 javac -proc:none -d "$RUNNER_TEMP/experiments"
       - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           category: /language:${{ matrix.language }}

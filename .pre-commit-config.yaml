@@ -15,9 +15,7 @@ repos:
       - id: check-merge-conflict
       - id: check-toml
       - id: check-yaml
-      # experiments/result.txt is captured program output and keeps its bytes.
       - id: end-of-file-fixer
-        exclude: ^experiments/result\.txt$
       - id: detect-private-key
       - id: mixed-line-ending
         args: [--fix=lf]
@@ -25,13 +23,12 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main]
       - id: trailing-whitespace
-        exclude: ^experiments/result\.txt$
 
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
     rev: 4380fbb73a154b5f5624794c1c78d9719ccc860f # frozen: v2.16.0
     hooks:
       # google-java-format, the default formatter of Spotless's Java step. The jar is
-      # pinned by SHA-256. Fixtures in examples/ and experiments/ keep their layout
+      # pinned by SHA-256. Fixtures in examples/ keep their layout
       # because their Javadoc text is test input.
       - id: pretty-format-java
         files: ^src/.*\.java$
