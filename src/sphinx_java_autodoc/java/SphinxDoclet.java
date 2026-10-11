@@ -60,7 +60,7 @@ public final class SphinxDoclet implements Doclet {
             root = xml.createElement("api"); xml.appendChild(root);
             root.setAttribute("schema", "1"); root.setAttribute("extractor", "0.1.0");
             var included = env.getIncludedElements().stream()
-                .filter(e -> e instanceof TypeElement && visible(e) && !hidden(e))
+                .filter(e -> e instanceof TypeElement && visible(e, false) && !hidden(e))
                 .map(e -> (TypeElement)e)
                 .sorted(Comparator.comparing(t -> t.getQualifiedName().toString())).toList();
             var packages = new TreeMap<String, PackageElement>();
@@ -72,7 +72,7 @@ public final class SphinxDoclet implements Doclet {
             for (var t : included) {
                 var n = declaration(root, "type", t);
                 for (var member : t.getEnclosedElements().stream()
-                        .filter(e -> !(e instanceof TypeElement) && visible(e) && !hidden(e))
+                        .filter(e -> !(e instanceof TypeElement) && visible(e, false) && !hidden(e))
                         .filter(e -> e instanceof ExecutableElement || e instanceof VariableElement)
                         .sorted(Comparator.comparing(this::id)).toList()) {
                     declaration(n, "member", member);
@@ -89,9 +89,9 @@ public final class SphinxDoclet implements Doclet {
         }
     }
 
-    private boolean visible(Element e) {
+    private boolean visible(Element e, boolean publicOnly) {
         while (e instanceof TypeElement || e instanceof ExecutableElement || e instanceof VariableElement) {
-            if (!e.getModifiers().contains(Modifier.PUBLIC) && !e.getModifiers().contains(Modifier.PROTECTED)) return false;
+            if (!e.getModifiers().contains(Modifier.PUBLIC) && (publicOnly || !e.getModifiers().contains(Modifier.PROTECTED))) return false;
             e = e.getEnclosingElement();
         }
         return true;
@@ -173,7 +173,7 @@ public final class SphinxDoclet implements Doclet {
         var n = add(parent, tag);
         n.setAttribute("id", id(e)); n.setAttribute("name", e.getSimpleName().toString());
         n.setAttribute("kind", e.getKind().name().toLowerCase(Locale.ROOT));
-        n.setAttribute("visibility", e.getModifiers().contains(Modifier.PUBLIC) ? "public" : "protected");
+        n.setAttribute("visibility", visible(e, true) ? "public" : "protected");
         n.setAttribute("package", elements.getPackageOf(e).getQualifiedName().toString());
         n.setAttribute("signature", signature(e));
         documentation(n, e); return n;
@@ -203,7 +203,13 @@ public final class SphinxDoclet implements Doclet {
             else if (t instanceof ThrowsTree r) {
                 var target = resolve(e, r.getExceptionName());
                 String name = target == null ? r.getExceptionName().toString() : id(target);
-                result.put("throws:" + name, new Part(e, name, r.getDescription()));
+                // Inheritance must copy every description of the same exception.
+                result.merge("throws:" + name, new Part(e, name, r.getDescription()), (first, next) -> {
+                    var content = new ArrayList<DocTree>(first.trees());
+                    content.add(trees.getDocTreeFactory().newStartElementTree(elements.getName("p"), List.of(), false));
+                    content.addAll(next.trees());
+                    return new Part(e, name, content);
+                });
             } else if (t instanceof SeeTree s) result.put("see:" + see++, new Part(e, "", s.getReference()));
             else if (t instanceof SinceTree s) result.put("since", new Part(e, "", s.getBody()));
             else if (t instanceof DeprecatedTree d) result.put("deprecated", new Part(e, "", d.getBody()));
@@ -362,7 +368,8 @@ public final class SphinxDoclet implements Doclet {
                 for (var a : s.getAttributes()) {
                     if (a instanceof AttributeTree attr) {
                         var x = add(n, "attr"); x.setAttribute("name", attr.getName().toString());
-                        x.setTextContent(attr.getValue().stream().map(Object::toString).collect(Collectors.joining()));
+                        x.setTextContent(attr.getValue().stream().map(v -> v instanceof EntityTree entity
+                            ? Objects.requireNonNullElse(trees.getCharacters(entity), entity.toString()) : v.toString()).collect(Collectors.joining()));
                     }
                 }
             } else if (t instanceof EndElementTree s) add(parent, "end").setAttribute("name", s.getName().toString());

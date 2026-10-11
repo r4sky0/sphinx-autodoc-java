@@ -122,6 +122,9 @@ def test_semantic_extraction(model):
         inherited.find("doc/part[@kind='throws']/text").text
         == "if the value is invalid"
     )
+    assert "if the value is empty" in "".join(
+        inherited.find("doc/part[@kind='throws']").itertext()
+    )
     assert inherited.find("doc/part/link").get("target") == "demo.Widget#convert(int)"
 
 
@@ -143,6 +146,10 @@ def test_html_links_structure_inventory_search(site):
     assert "java/util/Map.Entry.html" in html
     assert "java/lang/String.html#substring(int,int)" in html
     assert "<strong>structure</strong>" in html
+    assert 'href="https://example.test/?a=1&amp;b=2"' in html
+    assert '<div class="line">First line</div>' in html
+    assert '<div class="line"><em>Second line</em></div>' in html
+    assert '<div class="line"><em>Third line</em></div>' in html
     assert '<ol class="arabic' in html
     assert "highlight-java" in html
     assert "[unresolved inheritDoc]" not in html
@@ -365,6 +372,7 @@ def test_text_builder(site, tmp_path):
         "Transforms a value" in output
         and "String result = widget.convert(42);" in output
     )
+    assert "First line\n" in output and "*Second line*\n" in output
 
 
 def test_inheritance_search_order_omission_and_target(tmp_path):
@@ -588,3 +596,140 @@ def test_manual_external_role_preserves_varargs(tmp_path):
         "https://example.test/api/vendor/Service.html#consume(java.lang.String...)"
         in (tmp_path / "out/index.html").read_text()
     )
+
+
+@pytest.mark.parametrize("workers", ["1", "2"])
+def test_incremental_role_only_page_detects_removed_member(tmp_path, workers):
+    sources = tmp_path / "sources"
+    shutil.copytree(SOURCES, sources)
+    source = sources / "demo/Later.java"
+    source.write_text("package demo; public class Later { public void value() {} }")
+    docs = project(tmp_path, sources)
+    with (docs / "index.rst").open("a") as stream:
+        stream.write("\n:java:method:`demo.Later#value()`\n")
+    output = tmp_path / "out"
+    build(docs, output, "-j", workers)
+    source.write_text("package demo; public class Later {}")
+    messages = build(docs, output, "-j", workers, success=False)
+    assert "demo.Later#value()" in messages
+    assert anchor("demo.Later#value()") not in (output / "index.html").read_text()
+
+
+@pytest.mark.parametrize("workers", ["1", "2"])
+def test_incremental_missing_directive_recovers_when_type_is_added(tmp_path, workers):
+    sources = tmp_path / "sources"
+    shutil.copytree(SOURCES, sources)
+    docs = project(tmp_path, sources)
+    with (docs / "index.rst").open("a") as stream:
+        stream.write("\n.. java:autoclass:: demo.Later\n   :no-index:\n")
+    output = tmp_path / "out"
+    build(docs, output, "-j", workers, success=False)
+    (sources / "demo/Later.java").write_text(
+        "package demo; /** Added API body. */ public class Later {}"
+    )
+    build(docs, output, "-j", workers)
+    assert "Added API body." in (output / "index.html").read_text()
+
+
+def test_html_attribute_entities_are_decoded_once(tmp_path):
+    source = tmp_path / "Links.java"
+    source.write_text(
+        '/** <a href="https://example.test/?a=1&amp;b=2&#38;c=3&amp;amp;d=4">Query</a>. */ '
+        "public class Links {}"
+    )
+    path, _ = extract([source], [], tmp_path / "cache")
+    href = read_model(path).find("type/doc/part/start/attr")
+    assert href.text == "https://example.test/?a=1&b=2&c=3&amp;d=4"
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+@pytest.mark.parametrize("exception", ["IllegalArgumentException", "RuntimeException"])
+def test_repeated_throws_preserves_all_descriptions_and_inheritance(
+    tmp_path, explicit, exception
+):
+    source = tmp_path / "Child.java"
+    comment = (
+        "/** {@inheritDoc}\n"
+        " * @param renamed {@inheritDoc}\n"
+        " * @throws IllegalArgumentException {@inheritDoc}\n"
+        " */"
+        if explicit
+        else ""
+    )
+    source.write_text(f"""interface Contract {{
+    /** Validate the input.
+     * @param value the input
+     * @throws {exception} when value is negative; see {{@link String}}
+     * @throws {exception} when value is too large
+     */
+    void validate(int value) throws {exception};
+}}
+public class Child implements Contract {{
+    {comment}
+    public void validate(int renamed) throws IllegalArgumentException {{}}
+}}
+""")
+    path, _ = extract([source], [], tmp_path / "cache")
+    root = read_model(path)
+    assert not root.findall("diagnostic")
+    doc = element(root, "Child#validate(int)").find("doc")
+    text = "".join(doc.itertext())
+    assert text.index("when value is negative") < text.index("when value is too large")
+    assert doc.find("part/link").get("target") == "java.lang.String"
+
+
+def test_public_visibility_accounts_for_enclosing_types(tmp_path):
+    source = tmp_path / "Outer.java"
+    source.write_text("""public class Outer {
+    protected static class Extension {
+        public static class Nested { public int value; }
+    }
+}
+""")
+    path, _ = extract([source], [], tmp_path / "cache")
+    root = read_model(path)
+    nested = element(root, "Outer.Extension.Nested")
+    assert nested.get("visibility") == "protected"
+    assert nested.get("signature").startswith("public static class")
+    public = tmp_path / "public"
+    generate_pages(root, public, "public")
+    assert not (public / "type-Outer.Extension.Nested.rst").exists()
+    protected = tmp_path / "protected"
+    generate_pages(root, protected, "protected")
+    assert (protected / "type-Outer.Extension.Nested.rst").exists()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "conf.py").write_text(
+        f"extensions=['sphinx_java_autodoc']\njava_model={str(path)!r}\njava_visibility='public'\n"
+    )
+    (docs / "index.rst").write_text(
+        "Public API\n==========\n\n.. java:autoclass:: Outer.Extension.Nested\n   :members:\n"
+    )
+    build(docs, tmp_path / "out")
+    assert "Outer.Extension.Nested" not in (tmp_path / "out/index.html").read_text()
+
+
+def test_line_breaks_preserve_inline_formatting_and_preformatted_text():
+    from docutils import nodes
+
+    from sphinx_java_autodoc.render import comment
+
+    part = ET.fromstring("""<part>
+      <text>First</text><start name="br"/>
+      <start name="em"/><text>Second</text><start name="br" closed="true"/>
+      <text>Third</text><end name="em"/><start name="br"/><start name="br"/>
+      <text>Last</text>
+      <start name="pre"/><text>Code</text><start name="br"/><text>continued</text><end name="pre"/>
+    </part>""")
+    result = nodes.container("", *comment(part, None))
+    block = next(result.findall(nodes.line_block))
+    assert [line.astext() for line in block.children] == [
+        "First",
+        "Second",
+        "Third",
+        "",
+        "Last",
+    ]
+    assert isinstance(block.children[1][0], nodes.emphasis)
+    assert isinstance(block.children[2][0], nodes.emphasis)
+    assert next(result.findall(nodes.literal_block)).astext() == "Code\ncontinued"

@@ -55,7 +55,6 @@ class AutoClass(SphinxDirective):
                 subtype="type",
             )
             return []
-        self.env.get_domain("java").data["documents"].add(self.env.docname)
         self.env.note_dependency(self.env.java_model_path)
         visibility = self.options.get("visibility", self.config.java_visibility)
         if visibility == "public" and element.get("visibility") != "public":
@@ -160,7 +159,6 @@ class AutoPackage(SphinxDirective):
             )
             return []
         domain = self.env.get_domain("java")
-        domain.data["documents"].add(self.env.docname)
         self.env.note_dependency(self.env.java_model_path)
         target = nodes.target("", "", ids=[anchor(package)])
         self.state.document.note_explicit_target(target)
@@ -180,13 +178,12 @@ class JavaDomain(Domain):
         for name in ("type", "method", "field", "package", "obj")
     }
     directives = {"autoclass": AutoClass, "autopackage": AutoPackage}
-    initial_data = {"objects": {}, "documents": set()}
+    initial_data = {"objects": {}}
 
     def clear_doc(self, docname):
         self.data["objects"] = {
             k: v for k, v in self.data["objects"].items() if v[0] != docname
         }
-        self.data["documents"].discard(docname)
 
     def merge_domaindata(self, docnames, otherdata):
         for symbol, value in otherdata["objects"].items():
@@ -202,7 +199,6 @@ class JavaDomain(Domain):
                         subtype="duplicate",
                     )
                 self.data["objects"][symbol] = value
-        self.data["documents"].update(otherdata["documents"] & set(docnames))
 
     def get_objects(self):
         for symbol, (docname, target, kind) in sorted(self.data["objects"].items()):

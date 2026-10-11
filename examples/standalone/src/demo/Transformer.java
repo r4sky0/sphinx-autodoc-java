@@ -9,6 +9,7 @@ public interface Transformer<T> {
      * @param input the value to transform
      * @return the transformed value
      * @throws IllegalArgumentException if the value is invalid
+     * @throws IllegalArgumentException if the value is empty
      */
     T convert(T input) throws IllegalArgumentException;
 }

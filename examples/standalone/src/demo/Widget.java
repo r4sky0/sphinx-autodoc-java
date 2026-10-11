@@ -15,6 +15,8 @@ import java.util.Map;
  * if (result.length() > 0) {
  *     System.out.println(result);
  * }}</pre>
+ * <p>First line<br><em>Second line<br>Third line</em><br>Last line.</p>
+ * <p>Try <a href="https://example.test/?a=1&amp;b=2">query parameters</a>.</p>
  * @see Point
  * @since 1.0
  */
