@@ -2,7 +2,10 @@
 
 The process boundary is UTF-8 XML, rooted at `<api schema="1" extractor="0.1.0">`.
 Unknown schema versions, malformed XML, DTD/entity declarations, duplicate IDs and
-missing required declaration attributes are rejected. The file is generated input,
+missing required declaration attributes are rejected. Declaration kinds, nonempty
+names/signatures, package membership, and member IDs belonging to their enclosing
+type are validated before rendering. This tightens schema 1 validation without
+changing valid model structure. The file is generated input,
 not a general XML document interchange service. No external entities are fetched.
 
 - `package`: `name`, followed by `doc`.
@@ -11,7 +14,7 @@ not a general XML document interchange service. No external entities are fetched
   Visibility includes enclosing declarations: a public nested type inside a
   protected type has `visibility="protected"`; its signature retains `public`.
 - `member`: same attributes. Kinds include `constructor`, `method`, `field`,
-  `enum_constant`. Types include `class`, `interface`, `enum`, `record`,
+  `enum_constant`, `record_component`. Types include `class`, `interface`, `enum`, `record`,
   `annotation_type`.
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
   `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration

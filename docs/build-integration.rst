@@ -197,7 +197,9 @@ cache. Sphinx ``-j 2`` reading/writing and domain inventory merges are tested. S
 Sphinx processes must use separate source/output generation directories; sharing
 one generated-page directory across independent builds is not supported.
 
-Generated skeletons are written only when changed. Removed types leave the source
+Generated skeletons are written only when changed. The ownership manifest records
+old and intended content hashes before page updates, so an interrupted generation
+can retry even if the Java model changes again. Edited pages still stop the build. Removed types leave the source
 toctree and inventory; Sphinx can retain old HTML files in an existing output directory,
 so publish from a clean output directory. Old content-addressed cache entries can be
 removed when no build is using the cache; no background cache eviction is performed.

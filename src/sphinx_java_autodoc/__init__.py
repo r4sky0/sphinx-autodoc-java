@@ -58,32 +58,56 @@ def generate_pages(root, directory: Path, visibility: str) -> None:
         + "".join(f"   {entry}\n" for entry in entries)
     )
     manifest_path = directory / ".java-autodoc-manifest.json"
-    old = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
-    # Validate the complete write set before changing anything the user may have edited.
-    for filename in set(old) | set(pages):
-        if Path(filename).name != filename or not filename.endswith(".rst"):
-            raise ExtensionError("Java autodoc: invalid generated-page manifest.")
+    try:
+        old = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+        if not isinstance(old, dict):
+            raise ValueError("expected a filename-to-hashes mapping")
+        for filename, hashes in old.items():
+            if isinstance(hashes, str):
+                hashes = old[filename] = [hashes]
+            if (
+                Path(filename).name != filename
+                or not filename.endswith(".rst")
+                or not isinstance(hashes, list)
+                or not hashes
+                or any(
+                    not isinstance(h, str) or not re.fullmatch(r"[0-9a-f]{64}", h)
+                    for h in hashes
+                )
+            ):
+                raise ValueError("invalid filename or content hash")
+    except (OSError, ValueError) as exc:
+        raise ExtensionError(
+            f"Java autodoc: invalid generated-page manifest: {exc}"
+        ) from exc
+    # Check ownership before recording any new files as ours.
+    for filename in old.keys() | pages.keys():
         path = directory / filename
-        if path.exists() and hashlib.sha256(path.read_bytes()).hexdigest() != old.get(
-            filename
-        ):
+        if path.exists() and hashlib.sha256(
+            path.read_bytes()
+        ).hexdigest() not in old.get(filename, []):
             raise ExtensionError(
                 f"Java autodoc: refusing to overwrite edited or unowned page {path}; move your edits into a guide."
             )
+    hashes = {
+        name: hashlib.sha256(content.encode()).hexdigest()
+        for name, content in pages.items()
+    }
+    pending = {name: set(values) for name, values in old.items()}
+    for name, digest in hashes.items():
+        pending.setdefault(name, set()).add(digest)
+    # Journal both versions before any page changes, so an interrupted build can retry.
+    atomic_write(
+        manifest_path,
+        json.dumps(
+            {name: sorted(values) for name, values in sorted(pending.items())}
+        ).encode(),
+    )
     for filename, content in pages.items():
         atomic_write(directory / filename, content.encode())
     for filename in old.keys() - pages.keys():
         (directory / filename).unlink(missing_ok=True)
-    atomic_write(
-        manifest_path,
-        json.dumps(
-            {
-                name: hashlib.sha256(content.encode()).hexdigest()
-                for name, content in sorted(pages.items())
-            },
-            indent=2,
-        ).encode(),
-    )
+    atomic_write(manifest_path, json.dumps(hashes, indent=2, sort_keys=True).encode())
 
 
 def prepare(app):
