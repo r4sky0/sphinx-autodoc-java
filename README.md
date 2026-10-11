@@ -23,7 +23,7 @@ for what the output looks like.
 ## Requirements
 
 Python 3.12+, Sphinx 9.1.x, and **JDK 25 for extraction**. Your library can keep
-targeting Java 17 or 21. See [compatibility and limits](docs/compatibility.rst)
+targeting Java 17 or 21. See [compatibility and limits](https://r4sky0.github.io/sphinx-java-autodoc/compatibility.html)
 for the tested versions.
 
 ## Quick start
@@ -48,15 +48,15 @@ Add `api/index` to the toctree in `docs/index.rst`, then build:
 uv run sphinx-build -W --keep-going -n docs docs/_build/html
 ```
 
-[Publish your first API pages](docs/getting-started.rst) walks through these steps.
+[Publish your first API pages](https://r4sky0.github.io/sphinx-java-autodoc/getting-started.html) walks through these steps.
 Then continue with:
 
-- [Write a guide your users can follow](docs/guide.rst)
-- [Build with dependencies and CI](docs/build-integration.rst): Maven/Gradle
+- [Write a guide your users can follow](https://r4sky0.github.io/sphinx-java-autodoc/guide.html)
+- [Build with dependencies and CI](https://r4sky0.github.io/sphinx-java-autodoc/build-integration.html): Maven/Gradle
   classpaths, pre-extracted models and publishing to GitHub Pages
-- [Configuration and reference](docs/usage.rst) and [supported Javadoc](docs/javadoc-support.rst)
-- [Troubleshooting](docs/troubleshooting.rst)
-- [How it works](docs/design.rst) and the [architecture decision](docs/adr-001.md)
+- [Configuration and reference](https://r4sky0.github.io/sphinx-java-autodoc/usage.html) and [supported Javadoc](https://r4sky0.github.io/sphinx-java-autodoc/javadoc-support.html)
+- [Troubleshooting](https://r4sky0.github.io/sphinx-java-autodoc/troubleshooting.html)
+- [How it works](https://r4sky0.github.io/sphinx-java-autodoc/design.html) and the [architecture decision](docs/adr-001.md)
 
 ## Development
 
