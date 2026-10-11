@@ -8,21 +8,32 @@ Validation completed: **2026-10-11** (research dated 2026-10-10). Local release 
 |---|---|---|---|
 | JDK runtime | JDK 25 only | Temurin 25.0.3 | Other JDK runtimes are rejected, not claimed compatible |
 | Java source/API release | Selected JDK's `--release` | 17, 21, 25 with the complete feature fixture | Cross-compilation on JDK 25 is not testing JDK 17/21 runtimes |
-| Python | 3.12+ | CPython 3.12.13 and 3.14.5 | Minimum/current endpoints selected; 3.13 and future Python versions not run |
+| Python | 3.12+ | CPython 3.12.13 and 3.14.5 locally; Python 3.12–3.14 in GitHub Actions | Future Python versions untested |
 | Sphinx | `>=9.1,<9.2` | 9.1.0 | Other Sphinx releases not tested or advertised |
 | Docutils | Through Sphinx | 0.22.4 | No separate broader promise |
-| Platform | Platform-neutral Python/JDK implementation | macOS 26.4.1, arm64 | Linux/macOS/Windows CI configured; remote matrix not executed here |
-| HTML themes | Native Sphinx nodes | Alabaster 1.0.0 and Sphinx Classic build | Browser visual inspection blocked; no visual compatibility claim |
+| Platform | Platform-neutral Python/JDK implementation | macOS 26.4.1 locally; Linux, macOS and Windows in GitHub Actions | OS coverage is the configured runner matrix |
+| HTML themes | Native Sphinx nodes | Alabaster 1.0.0 and Sphinx Classic; Chromium on Linux at 1440px and 390px | Classic retains its theme-level minimum width on mobile; other browser engines untested |
 | Other builders | Native nodes | Sphinx text builder | PDF/LaTeX, EPUB and other builders untested |
 | Build parallelism | Sphinx parallel read/write hooks | `-j 2`, inventory compared with `-j 1` | Separate simultaneous Sphinx processes sharing generated directories unsupported |
 
 The runtime range is intentionally narrow: only one JDK and one Sphinx release were
-available. Two Python endpoints were available. Network restrictions prevented fresh
+available locally. Two Python endpoints were available. Initial network restrictions prevented fresh
 registry installation of several packages, so validation environments reused locally
 installed dependency files (Sphinx, Docutils, Jinja2, pytest); Python 3.12 uses
 MarkupSafe's pure-Python fallback. Unrelated pytest plugin auto-loading was disabled
 on Python 3.12 to avoid another project's Python-3.14-only Playwright/greenlet binary.
 The extension itself has no Python native dependency.
+
+Subsequent GitHub Actions runs installed the locked dependencies in clean
+environments. The [initial CI run](https://github.com/r4sky0/sphinx-autodoc-java/actions/runs/38119604674)
+passed the complete OS/Python matrix, packaging, strict documentation builds,
+lint/compiler checks and dependency audit. Its browser check exposed mobile
+signature overflow, fixed by the extension's scoped wrapping stylesheet. The
+[follow-up Chromium job](https://github.com/r4sky0/sphinx-autodoc-java/actions/runs/38119914438/job/114412446678)
+passed structure, navigation, live search and API-width checks in both themes at
+desktop/mobile widths; screenshots are available in that run's artifacts.
+The README's GitHub installation and Sphinx configuration were also reproduced
+in a fresh uv project, including generated pages and a handwritten class excerpt.
 
 ## Automated checks
 
@@ -77,17 +88,14 @@ published artifact and is not expected to be deterministic.
 
 ## Checks that could not run
 
-- Chromium failed at macOS `bootstrap_check_in` / `MachPortRendezvousServer` with
-  permission denied. Firefox aborted at startup under the same sandbox. No rendered
-  screenshot was obtained. Both themes' HTML builds and structural checks passed,
-  but navigation interaction, live search, viewport overflow, long-signature layout
-  and screenshot review remain **unverified**. `tests/visual_check.py` provides the
-  repeatable browser checks/screenshots for an unrestricted environment.
+- Local browser execution was blocked by the macOS sandbox or missing browser
+  binaries. Chromium validation and screenshots subsequently passed in GitHub
+  Actions as recorded above. Firefox and WebKit remain untested.
 - Maven and Gradle executables were absent. Complete minimal project files and
   documented classpath-export commands are supplied, but those commands were not run.
-- Direct PyPI project/JSON retrieval and a clean online dependency resolution were
-  unavailable. Package-name availability remains provisional.
-- No other JDK runtime, Sphinx version, OS, browser engine, large-project performance
+- Direct PyPI project/JSON retrieval was unavailable. Package-name availability
+  remains provisional until the account owner registers the pending trusted publisher.
+- No other JDK runtime, Sphinx version, browser engine, large-project performance
   workload, or remote Javadoc link availability was tested.
 
 ## Known first-release limits

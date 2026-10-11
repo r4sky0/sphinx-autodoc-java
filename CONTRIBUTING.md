@@ -31,6 +31,8 @@ uv run --locked --extra test python tests/visual_check.py
 Build the default HTML site first using the command above. Browser checks cover
 desktop/mobile layouts, Java API structure, navigation, and search for Alabaster
 and Classic. CI retains screenshots and a JSON report, including on failures.
+API pages must not add horizontal overflow beyond the theme's normal layout;
+Classic retains its fixed sidebar and minimum page width on mobile.
 
 The required `All checks` status covers lint, compiler warnings, the test matrix,
 source/wheel packaging, strict docs, browser checks, and dependency auditing.
