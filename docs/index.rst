@@ -1,15 +1,55 @@
-Java autodoc
-============
+Publish your Java library with Sphinx
+=====================================
 
-Bring Java APIs and handwritten guides into one Sphinx site. The API below is
-extracted from ordinary Java sources and Javadoc comments without running the
-application. Try :java:type:`demo.Widget`,
-:java:method:`demo.Widget#convert(int)`, and :java:field:`demo.Widget#LABEL`.
+Your library already has Java sources and Javadoc comments. Your users also need
+examples that explain where to start and which API to choose.
+``sphinx-java-autodoc`` brings both into one searchable Sphinx site: write the
+guides yourself and generate the API reference from the same sources you maintain.
+
+**See the result first:** the :doc:`example API <api/index>` on this site is
+generated from a small ``demo`` package. Open :java:type:`Widget <demo.Widget>`
+to see overloads, inherited comments and links to standard Java types. It is a
+feature demonstration, not a library you need to install.
+
+These docs are for **Java library maintainers adopting the extension**:
+
+1. :doc:`getting-started`: install the extension and generate API pages from
+   your sources.
+2. :doc:`guide`: help a reader pick an API and complete a task, linking into
+   the reference.
+3. :doc:`build-integration`: add dependencies and generated sources, then
+   publish the site from CI.
+
+Extraction requires JDK 25; your library can still target Java 17 or 21. See
+:doc:`compatibility` for tested versions and known limits. The extension never
+runs application classes or annotation processors, and never downloads Java
+dependencies.
 
 .. toctree::
-   :maxdepth: 2
+   :caption: Publish your documentation
+   :maxdepth: 1
+
+   getting-started
+   guide
+   build-integration
+
+.. toctree::
+   :caption: Reference and help
+   :maxdepth: 1
 
    usage
-   guide
+   javadoc-support
+   compatibility
+   troubleshooting
+
+.. toctree::
+   :caption: Live example
+   :maxdepth: 1
+
+   Example Java API <api/index>
+
+.. toctree::
+   :caption: Project internals
+   :maxdepth: 1
+
    design
-   api/index

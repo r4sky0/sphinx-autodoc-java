@@ -49,7 +49,8 @@ source/wheel packaging, strict docs, browser checks, and dependency auditing.
 Package checks install the wheel built from the source archive and run the real
 integration suite against that installation. Weekly CI also detects newly
 reported vulnerabilities. The application remains an initial release; passing CI
-does not extend the compatibility promises in `docs/validation.md`.
+does not extend the compatibility promises in `docs/compatibility.rst`;
+update that page when a new environment has actually passed.
 
 # Releases
 

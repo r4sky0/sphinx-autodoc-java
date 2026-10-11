@@ -52,7 +52,7 @@ sphinx-java-autodoc = "sphinx_java_autodoc.__main__:main"
 packages = ["src/sphinx_java_autodoc"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/examples", "/experiments", "/docs", "/README.md", "/CONTRIBUTING.md", "/SECURITY.md", "/LICENSE"]
+include = ["/src", "/tests", "/examples", "/docs", "/README.md", "/CONTRIBUTING.md", "/SECURITY.md", "/LICENSE"]
 exclude = ["/docs/_build", "/docs/api", "**/.java-autodoc-cache", "**/target", "**/build"]
 
 [tool.pytest.ini_options]
@@ -61,7 +61,7 @@ testpaths = ["tests"]
 [tool.ruff]
 target-version = "py312"
 include = ["*.py", "*.pyi", "pyproject.toml"]
-extend-exclude = [".venv*", "experiments", "docs/_build", "docs/api"]
+extend-exclude = [".venv*", "docs/_build", "docs/api"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "UP", "B"]

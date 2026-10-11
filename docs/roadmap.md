@@ -1,8 +1,7 @@
 # Prioritized follow-up roadmap
 
-1. **Complete release verification:** run browser inspection on Alabaster and
-   Classic, execute the Maven/Gradle recipes, check PyPI name availability, and run
-   the included CI matrix on Linux. These are release qualification gaps, not
+1. **Complete release verification:** execute the Maven/Gradle recipes and
+   register the PyPI trusted publisher. These are release qualification gaps, not
    additional backends. Keep JDK 25 / Sphinx 9.1 as the narrow baseline until wider
    runtime versions are actually tested.
 2. **Extend Javadoc fidelity:** structured Markdown, external snippets and snippet
