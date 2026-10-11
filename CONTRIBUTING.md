@@ -5,19 +5,29 @@ JDK 25. Ensure `java`, `javac`, and `javadoc` are on `PATH`.
 
 ```sh
 uv sync --locked
-uv run --locked ruff check .
-uv run --locked ruff format --check .
-uv run --locked actionlint
+uv run --locked pre-commit install
+uv run --locked pre-commit run --all-files
 uv run --locked pytest -q
 uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
 uv build
 uv run --locked twine check --strict dist/*
 ```
 
-Use `uv run ruff check --fix .` and `uv run ruff format .` to apply lint/format
-fixes. Update dependencies with `uv lock --upgrade`, and commit `uv.lock` with
-changes to `pyproject.toml`. CI uses `--locked` so a stale lockfile fails.
-Dependabot opens weekly updates for Python packages and pinned GitHub Actions.
+`pre-commit install` sets up the commit and commit-message hooks; CI runs the same
+hooks in the Lint job. They cover Ruff lint and formatting, google-java-format for
+the doclet (the formatter Spotless uses for Java, pinned by checksum),
+`javac -Xlint:all -Werror`, actionlint, zizmor, typos, `pyproject.toml`
+validation, RST pitfalls, `uv.lock` freshness and basic file hygiene. Commit
+messages must use conventional prefixes such as `feat:`, `fix:` or `docs:`, and
+direct commits to `main` are rejected. Hooks with `--fix`/`--autofix` rewrite
+files; review and stage their changes. Python tools run through `uv run --locked`,
+so their versions come from `uv.lock`.
+
+Update dependencies with `uv lock --upgrade`, and commit `uv.lock` with changes to
+`pyproject.toml`. CI uses `--locked` so a stale lockfile fails. Dependabot opens
+weekly updates, after a seven-day cooldown, for Python packages, pinned GitHub
+Actions and pre-commit hook revisions. To update hooks by hand, run
+`uv run --locked pre-commit autoupdate --freeze`.
 
 For the browser checks:
 

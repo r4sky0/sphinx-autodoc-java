@@ -140,9 +140,9 @@ From a clone of this repository:
 
 ```sh
 uv sync --locked
+uv run --locked pre-commit install
+uv run --locked pre-commit run --all-files
 uv run --locked pytest
-uv run --locked ruff check .
-uv run --locked ruff format --check .
 uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
 ```
 

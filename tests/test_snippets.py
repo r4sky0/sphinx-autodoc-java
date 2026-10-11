@@ -99,6 +99,7 @@ public class Snippets {}
         '{@snippet region="example" :\n int value = 1;\n}',
         '{@snippet id="example" :\n int value = 1;\n}',
         '{@snippet lang="java" lang="text" :\n int value = 1;\n}',
+        "{@snippet lang :\n int value = 1;\n}",
         '{@snippet :\n int value = 1; // @highlight substring="value"\n}',
         '{@snippet :\n // @start region="example"\n int value = 1;\n // @end\n}',
     ],
