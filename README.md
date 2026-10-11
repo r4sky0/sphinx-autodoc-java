@@ -3,7 +3,10 @@
 [![CI](https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml/badge.svg)](https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml)
 [Documentation](https://r4sky0.github.io/sphinx-java-autodoc/)
 
-Bring Java API documentation and handwritten guides into one Sphinx site.
+Publish your Java library's guides and API reference in one searchable Sphinx
+site. Keep API contracts in Java sources and Javadoc; write guides that help
+your users choose an API and complete a task.
+
 `sphinx-java-autodoc` reads Java sources and Javadoc comments with the JDK compiler
 APIs and renders them as native Sphinx content.
 
@@ -15,6 +18,10 @@ APIs and renders them as native Sphinx content.
 
 Extraction does not execute application classes or annotation processors, and it
 does not download Java dependencies. The wheel bundles the Java doclet source.
+
+Start with [publish your first API pages](docs/getting-started.rst), then
+[write a guide your users can follow](docs/guide.rst). The documentation site's
+`demo.Widget` API is a feature demonstration, not a dependency of your library.
 
 ## Requirements and tested Java versions
 
@@ -63,11 +70,13 @@ extensions = ["sphinx_java_autodoc"]
 java_sources = ["../src/main/java"]
 java_release = "17"  # use "21" or "25" for those source/API releases
 java_generate = "api"
+java_visibility = "public"
 ```
 
 If you already have an `extensions` list, append `"sphinx_java_autodoc"` to it.
-Set `java_release` to your project's target version; omitting it uses the
-selected JDK's default release. If JDK 25 is not on `PATH`, also set
+Set `java_release` to your library's source/API target; omitting it uses the
+selected JDK's default release. Use `java_visibility = "protected"` to include
+subclass extension points. If JDK 25 is not on `PATH`, also set
 `java_jdk = "/path/to/jdk-25"`.
 
 The extension extracts Java API information and generates pages under `docs/api/`.
@@ -86,7 +95,7 @@ My Java project
 Build the site from your project root:
 
 ```sh
-uv run sphinx-build -W --keep-going docs docs/_build/html
+uv run sphinx-build -W --keep-going -n docs docs/_build/html
 ```
 
 Open `docs/_build/html/index.html` to view it. Rebuild after editing Java sources;
@@ -115,7 +124,9 @@ java_classpath = ["../lib/dependency.jar", "../other-module/target/classes"]
 ```
 
 Paths are relative to `conf.py`. Resolve dependencies and produce generated Java
-sources before building documentation. The extension does not invoke Maven or Gradle.
+sources before building documentation. The extension does not invoke Maven or Gradle;
+see [build integration](docs/build-integration.rst) for Maven/Gradle recipes and
+pre-extracted models.
 
 ## Current limits and further reading
 
@@ -127,8 +138,9 @@ sources before building documentation. The extension does not invoke Maven or Gr
 - Maven and Gradle integration recipes are provided but have not been executed in
   the recorded validation environment.
 
-See the [usage guide](docs/usage.rst) for directive options, external Javadoc links,
-intersphinx, Maven/Gradle recipes, and pre-extracted XML models. Rendering a
+Use the [configuration and reference](docs/usage.rst) to look up directive options,
+link syntax, external Javadoc links and intersphinx, or
+[troubleshooting](docs/troubleshooting.rst) to diagnose a failed build. Rendering a
 pre-extracted model requires no JDK; creating it still requires JDK 25.
 The [validation report](docs/validation.md) records tested behavior and known limits;
 the [architecture decision](docs/adr-001.md) and [backend comparison](docs/research.md)

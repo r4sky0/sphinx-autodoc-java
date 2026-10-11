@@ -1,97 +1,54 @@
-Installation and usage
-======================
+Configuration and reference
+===========================
 
-Requirements: Python 3.12 or newer, Sphinx 9.1.x, and JDK 25.
+Use this page to look up settings, directive options and link syntax. For a first
+build, start with :doc:`getting-started`. For dependencies and separate extraction,
+see :doc:`build-integration`.
 
-From a clean checkout::
+Sphinx configuration
+--------------------
 
-   python3 -m venv .venv
-   . .venv/bin/activate
-   pip install -e '.[test]'
-   sphinx-build -W --keep-going docs docs/_build/html
-   pytest
+Set these values in ``conf.py``. Source, classpath and model paths are relative to
+that file; ``java_generate`` is relative to the Sphinx source directory.
 
-The build compiles the bundled doclet locally. It never downloads Java dependencies.
+.. list-table::
+   :header-rows: 1
+   :widths: 25 20 55
 
-The first release is installed from this checkout or its built wheel; it has not
-been published to PyPI. For a distributable package::
+   * - Setting
+     - Default
+     - Purpose
+   * - ``java_sources``
+     - ``[]``
+     - Java files or source roots; directories are scanned recursively.
+   * - ``java_classpath``
+     - ``[]``
+     - Existing dependency JARs or class directories. No wildcard expansion.
+   * - ``java_jdk``
+     - ``""``
+     - JDK 25 home; empty selects the runtime on ``PATH``.
+   * - ``java_release``
+     - ``""``
+     - Source/API release; empty uses the selected JDK's default. Tested: 17, 21, 25.
+   * - ``java_generate``
+     - ``""``
+     - Subdirectory for generated package/type pages, such as ``"api"``.
+       Empty disables page generation; use explicit directives instead.
+   * - ``java_visibility``
+     - ``"protected"``
+     - ``"public"`` for public declarations; ``"protected"`` also includes
+       protected declarations.
+   * - ``java_model``
+     - ``""``
+     - Pre-extracted XML model; mutually exclusive with ``java_sources``.
+   * - ``java_external_javadoc``
+     - ``{}``
+     - Package prefixes mapped to external Javadoc roots; examples below.
 
-   pip install build
-   python -m build
-   pip install dist/sphinx_java_autodoc-0.1.0-py3-none-any.whl
-
-Check ``java -version``, ``javac -version`` and ``javadoc --version``. If several
-JDKs are installed, set ``java_jdk`` to the JDK 25 home directory. Extraction uses
-the tools from the selected runtime's actual home. The project being documented
-need not target Java 25: ``java_release = '17'`` selects source/API release 17.
-Runtime compatibility is separate from source-release selection.
-
-Standalone sources
-------------------
-
-The complete fixture is in ``examples/standalone/src``. From the repository root::
-
-   sphinx-java-autodoc examples/standalone/src \
-     --release 17 --warnings-as-errors \
-     --cache build/java-cache -o build/api.xml
-
-The extension also performs extraction during a Sphinx build. In ``docs/conf.py``:
-
-.. code-block:: python
-
-   extensions = ['sphinx_java_autodoc']
-   java_sources = ['../src/main/java']
-   java_classpath = ['../lib/dependency.jar']  # omit when unnecessary
-   java_generate = 'api'
-
-Add the generated index alongside your guides:
-
-.. code-block:: rst
-
-   Project documentation
-   =====================
-
-   .. toctree::
-      :maxdepth: 2
-
-      introduction
-      tutorials
-      api/index
-
-Then run ``sphinx-build -W --keep-going docs docs/_build/html``.
-Paths in ``java_sources``, ``java_classpath`` and ``java_model`` are relative to
-``conf.py``. Each source entry may be a directory (recursively scanned) or a Java
-file. The CLI uses paths relative to its working directory. Empty or missing source
-roots and missing classpath entries are errors, not silently skipped inputs.
-
-Explicit extraction and rendering
----------------------------------
-
-For an existing build pipeline, extract XML first and use it in Sphinx:
-
-.. code-block:: python
-
-   extensions = ['sphinx_java_autodoc']
-   java_model = '../build/api.xml'
-   java_generate = 'api'
-
-Do not also set ``java_sources``. Reading an existing model requires no JDK.
-The build pipeline must rerun extraction when sources or dependencies change;
-Sphinx can only detect changes in the supplied model. The extraction command
-preserves the last successful output if compilation or strict diagnostics fail.
-
-For direct doclet invocation, locate and compile the bundled source::
-
-   python -c "from sphinx_java_autodoc.extractor import DOCLET; print(DOCLET)"
-   javac -proc:none -encoding UTF-8 -d build/doclet /printed/path/SphinxDoclet.java
-   javadoc -quiet -encoding UTF-8 -protected \
-     -doclet sphinxjava.SphinxDoclet -docletpath build/doclet \
-     --sphinx-output build/api.xml -sourcepath src/main/java \
-     -classpath lib/dependency.jar com.example
-
-Prefer the Python CLI for content caching, atomic output and warning handling.
-The direct command takes ordinary Javadoc package or file inputs and does not
-provide the Python wrapper's cache or publication safeguards.
+Empty or missing source roots and missing classpath entries are errors. Leave
+both ``java_sources`` and ``java_model`` unset when only consuming another site's
+Java inventory through intersphinx. Such a site needs no JDK; generating local
+API pages requires extracted types.
 
 Directives and roles
 --------------------
@@ -195,77 +152,6 @@ Then use the same Java roles. A roles-only consumer needs no Java sources or JDK
 Local inventory files make cross-project tests and offline builds deterministic;
 normal intersphinx URL inventories may perform network requests independently.
 
-Maven
------
-
-``examples/maven/pom.xml`` reuses the standalone source fixture. Resolve build
-plugins and dependencies in an explicit preparation step. The extension itself
-never invokes Maven::
-
-   mvn -f examples/maven/pom.xml -DskipTests compile \
-     org.apache.maven.plugins:maven-dependency-plugin:3.11.0:build-classpath \
-     -Dmdep.includeScope=compile -Dmdep.outputFile=target/classpath.txt
-   sphinx-java-autodoc examples/standalone/src \
-     --classpath-file examples/maven/target/classpath.txt \
-     -o build/maven-api.xml --cache build/java-cache --warnings-as-errors
-
-For your own project, replace the fixture root with ``src/main/java``. If no
-external dependencies exist, omit ``--classpath-file``. The
-`Maven dependency plugin <https://maven.apache.org/plugins/maven-dependency-plugin/build-classpath-mojo.html>`_
-writes platform-separated classpaths, including provided dependencies when compile
-scope is selected. Compile/generate-sources are explicit project build steps and
-may run project build plugins; extraction does not execute application code.
-
-Gradle
-------
-
-``examples/gradle/build.gradle`` reuses the same sources and provides an explicit
-``writeJavaAutodocClasspath`` task. With a Gradle distribution supporting JDK 25::
-
-   gradle -p examples/gradle classes writeJavaAutodocClasspath
-   sphinx-java-autodoc examples/standalone/src \
-     --classpath-file examples/gradle/build/java-autodoc-classpath.txt \
-     -o build/gradle-api.xml --cache build/java-cache --warnings-as-errors
-
-For your project, the
-`Java plugin <https://docs.gradle.org/current/userguide/java_plugin.html>`_
-provides ``sourceSets.main.compileClasspath``. Write its ``asPath`` to a UTF-8 file;
-pass source directories separately. No Gradle wrapper or automatic distribution
-download is bundled here. Neither Maven nor Gradle was installed in the validation
-environment; these integration recipes remain unexecuted.
-
-Dependencies, generated sources and multiple modules
-----------------------------------------------------
-
-Pass dependency JARs or class directories through ``java_classpath`` (a list),
-``--classpath`` (platform path separator), or ``--classpath-file``. Wildcard
-classpath expansion is not supported: enumerate files explicitly. Dependencies
-are never downloaded implicitly. A missing dependency results in compiler diagnostics
-with the failing symbol and a classpath hint.
-
-List several source roots to combine non-JPMS Maven/Gradle modules:
-
-.. code-block:: python
-
-   java_sources = [
-       '../core/src/main/java',
-       '../client/src/main/java',
-       '../client/target/generated-sources/annotations',
-   ]
-   java_classpath = ['../lib/dependency.jar']
-
-Produce generated sources before running Sphinx. No annotation processors execute
-inside extraction; Lombok-like compiler AST transformations are not supported.
-Do not include test sources unless they are part of the API you intend to publish.
-JPMS ``module-info.java`` inputs are rejected with an actionable error in this
-release; use non-modular roots or explicitly enumerate declaration files. Cross-module
-JPMS identity, module paths and split packages are deferred.
-
-A binary dependency is enough to resolve a reference or signature. To inherit its
-Javadoc, supply its source as an additional source root. Such roots also become
-eligible for generated pages; when you only want selected types, leave
-``java_generate`` empty and use explicit directives.
-
 Documentation fidelity and diagnostics
 --------------------------------------
 
@@ -310,36 +196,4 @@ markup actions (``@highlight``, ``@replace``, ``@link``, ``@start``, ``@end``) w
 and retain the original tag as literal text. Markup detection is conservative:
 reserved markup tags following ``//`` or ``#`` also warn inside quoted examples.
 
-``///`` Markdown comments, unsupported tags and unsupported HTML produce warnings
-with an alternative or source symbol. Malformed comments and unresolved links also
-warn. Run strict builds::
-
-   sphinx-build -W --keep-going docs docs/_build/html
-   sphinx-java-autodoc src/main/java -o build/api.xml --warnings-as-errors
-
-Warnings use ``java.extract``, ``java.html``, ``java.type``, ``java.member`` and related
-categories. Sphinx's normal missing-reference diagnostics also apply. Suppression is
-possible through normal Sphinx configuration, but suppressing a warning does not
-supply missing content. JDK/compiler failures stop the build and preserve prior output.
-
-Caching and parallelism
------------------------
-
-The Sphinx cache lives under ``<doctreedir>/java-cache``. The CLI defaults to
-``.java-autodoc-cache`` or accepts ``--cache``. Fingerprints include source paths and
-contents, classpath order and contents, source release, tool identity/JDK modules,
-extension version and extractor code. Cache hits still hash inputs; this costs I/O
-but catches edits even when timestamps are preserved. A changed input triggers
-whole-project extraction and re-reading of all Sphinx documents, including pages
-containing only Java roles and directives for types that were previously missing.
-
-Output contains no build timestamps or machine-specific source paths. Temporary
-work directories and atomic replacement protect simultaneous extraction into one
-cache. Sphinx ``-j 2`` reading/writing and domain inventory merges are tested. Separate
-Sphinx processes must use separate source/output generation directories; sharing
-one generated-page directory across independent builds is not supported.
-
-Generated skeletons are written only when changed. Removed types leave the source
-toctree and inventory; Sphinx can retain old HTML files in an existing output directory,
-so publish from a clean output directory. Old content-addressed cache entries can be
-removed when no build is using the cache; no background cache eviction is performed.
+For unsupported content and missing documentation, see :doc:`troubleshooting`.
