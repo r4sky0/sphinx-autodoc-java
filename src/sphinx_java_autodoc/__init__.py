@@ -153,6 +153,10 @@ def outdated(app, env, added, changed, removed):
     )
 
 
+def add_static_path(app):
+    app.config.html_static_path.append(str(Path(__file__).parent / "static"))
+
+
 def setup(app):
     for name, default in {
         "java_sources": [],
@@ -166,6 +170,8 @@ def setup(app):
     }.items():
         app.add_config_value(name, default, "env")
     app.add_domain(JavaDomain)
+    app.add_css_file("java-autodoc.css")
+    app.connect("builder-inited", add_static_path)
     app.connect("builder-inited", prepare)
     app.connect("env-get-outdated", outdated)
     return {

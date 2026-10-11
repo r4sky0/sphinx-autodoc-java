@@ -1,6 +1,6 @@
 # Compatibility and release validation
 
-Validation date: **2026-10-10**. Local release 0.1.0; no PyPI publication.
+Validation completed: **2026-10-11** (research dated 2026-10-10). Local release 0.1.0; no PyPI publication.
 
 ## Declared baseline and tested matrix
 
@@ -11,7 +11,7 @@ Validation date: **2026-10-10**. Local release 0.1.0; no PyPI publication.
 | Python | 3.12+ | CPython 3.12.13 and 3.14.5 | Minimum/current endpoints selected; 3.13 and future Python versions not run |
 | Sphinx | `>=9.1,<9.2` | 9.1.0 | Other Sphinx releases not tested or advertised |
 | Docutils | Through Sphinx | 0.22.4 | No separate broader promise |
-| Platform | Platform-neutral Python/JDK implementation | macOS 26.4.1, arm64 | Linux CI provided but not executed here; Windows untested |
+| Platform | Platform-neutral Python/JDK implementation | macOS 26.4.1, arm64 | Linux/macOS/Windows CI configured; remote matrix not executed here |
 | HTML themes | Native Sphinx nodes | Alabaster 1.0.0 and Sphinx Classic build | Browser visual inspection blocked; no visual compatibility claim |
 | Other builders | Native nodes | Sphinx text builder | PDF/LaTeX, EPUB and other builders untested |
 | Build parallelism | Sphinx parallel read/write hooks | `-j 2`, inventory compared with `-j 1` | Separate simultaneous Sphinx processes sharing generated directories unsupported |
@@ -25,6 +25,15 @@ on Python 3.12 to avoid another project's Python-3.14-only Playwright/greenlet b
 The extension itself has no Python native dependency.
 
 ## Automated checks
+
+Final local results: **27 tests passed on Python 3.12.13** (37.13 seconds), and
+**27 passed on Python 3.14.5** (33.01 seconds). The doclet also compiled with
+`javac -Xlint:all -Werror -proc:none`. Alabaster, Classic and text builds passed
+with warnings treated as errors. A separately installed wheel successfully ran
+strict extraction and a parallel Sphinx build; its bundled doclet was verified.
+A wheel rebuilt from the source archive had identical file contents to the workspace
+wheel. The source archive includes the extraction experiment, fixtures and tests.
+These timings describe the test suite, not extraction performance benchmarks.
 
 `tests/test_integration.py` exercises real JDK and Sphinx subprocesses:
 
@@ -48,6 +57,7 @@ The extension itself has no Python native dependency.
 - Byte-for-byte XML determinism across checkout locations, cache hits, concurrent
   cache publication, invalid schema rejection, and pre-extracted models without a JDK.
 - Extraction of a class whose static initializer and constructor throw if executed.
+- An annotation processor trap confirms extraction does not execute processors.
 
 Reproduce (after normal installation):
 
