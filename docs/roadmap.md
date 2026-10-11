@@ -6,7 +6,7 @@
    runtime versions are actually tested.
 2. **Extend Javadoc fidelity:** structured Markdown, external snippets and snippet
    regions/markup (plain inline snippets are supported); record
-   accessor/canonical-constructor documentation synthesis; better support for tables, definition
+   accessor/canonical-constructor documentation synthesis; better support for definition
    lists, headings and local documentation assets. Retain actionable diagnostics
    until each behavior has fixtures.
 3. **Support JPMS deliberately:** module-qualified IDs, module paths, split-package

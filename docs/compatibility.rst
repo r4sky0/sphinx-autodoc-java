@@ -65,8 +65,8 @@ Known limits
 * Traditional Javadoc comments and plain inline ``{@snippet}`` bodies are
   supported; see :doc:`javadoc-support`. Markdown comments (``///``), external or
   hybrid snippets, snippet regions, IDs and markup, and unsupported tags warn. The
-  HTML subset excludes tables, definition lists, headings, images, attributes other
-  than an absolute link ``href``, and local documentation assets.
+  HTML subset excludes definition lists, headings, images, presentational attributes,
+  ``<th>`` styling outside table headers, and local documentation assets.
 * Only declared members are shown. Non-overridden inherited methods stay on their
   ancestor's page. Compiler-generated record and enum methods are listed, but the
   standard doclet's generated prose for them is not synthesized.
