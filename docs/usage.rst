@@ -8,7 +8,7 @@ see :doc:`build-integration`.
 Sphinx configuration
 --------------------
 
-Set these values in ``conf.py``. Source, classpath and model paths are relative to
+Set these values in ``conf.py``. Source, source lookup, classpath and model paths are relative to
 that file; ``java_generate`` is relative to the Sphinx source directory.
 
 .. list-table::
@@ -21,6 +21,9 @@ that file; ``java_generate`` is relative to the Sphinx source directory.
    * - ``java_sources``
      - ``[]``
      - Java files or source roots; directories are scanned recursively.
+   * - ``java_sourcepath``
+     - ``[]``
+     - Source lookup directories for dependency comments; not selected for publication.
    * - ``java_classpath``
      - ``[]``
      - Existing dependency JARs or class directories. No wildcard expansion.

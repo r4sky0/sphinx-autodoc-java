@@ -54,3 +54,12 @@ External/hybrid snippets (``file``/``class``), regions, IDs, duplicate attribute
 markup actions (``@highlight``, ``@replace``, ``@link``, ``@start``, ``@end``) warn
 and retain the original tag as literal text. Markup detection is conservative:
 reserved markup tags following ``//`` or ``#`` also warn inside quoted examples.
+
+Inline return descriptions
+--------------------------
+
+A method comment beginning with ``{@return description}`` produces both the
+introductory "Returns description." sentence and a Returns field. Inline markup
+and inherited return descriptions are preserved in both places. The conformance
+suite compares these results with the JDK standard doclet, including inheritance
+between inline and block return tags.
