@@ -38,7 +38,7 @@ public final class SphinxDoclet implements Doclet {
   /** Documentation content together with the declaration whose comment supplied it. */
   private record Part(Element owner, String label, List<? extends DocTree> trees) {}
 
-  /** Fluent builder for the model's DOM elements. */
+  /** Fluent builder for the model's DOM elements; all values are made XML 1.0 safe. */
   private record Xml(org.w3c.dom.Element node) {
     Xml add(String tag) {
       var child = node.getOwnerDocument().createElement(tag);
@@ -47,17 +47,49 @@ public final class SphinxDoclet implements Doclet {
     }
 
     Xml set(String name, String value) {
-      node.setAttribute(name, value);
+      node.setAttribute(name, safe(value));
       return this;
     }
 
     void addText(String tag, String value) {
       var child = add(tag).node;
-      child.appendChild(child.getOwnerDocument().createTextNode(value));
+      child.appendChild(child.getOwnerDocument().createTextNode(safe(value)));
     }
 
     void addAttr(String name, String value) {
-      add("attr").set("name", name).node.setTextContent(value);
+      add("attr").set("name", name).node.setTextContent(safe(value));
+    }
+
+    /**
+     * Writes characters that XML 1.0 cannot contain (controls, lone surrogates) as Java Unicode
+     * escapes. javac translates Unicode escapes even inside comments, so a NUL in a comment was
+     * written as an escape in the source; this restores that spelling.
+     */
+    private static String safe(String value) {
+      if (value.codePoints().allMatch(Xml::allowed)) {
+        return value;
+      }
+      var result = new StringBuilder();
+      value
+          .codePoints()
+          .forEach(
+              c -> {
+                if (allowed(c)) {
+                  result.appendCodePoint(c);
+                } else {
+                  result.append("\\u%04x".formatted(c));
+                }
+              });
+      return result.toString();
+    }
+
+    private static boolean allowed(int c) {
+      return c == '\t'
+          || c == '\n'
+          || c == '\r'
+          || (c >= 0x20 && c <= 0xD7FF)
+          || (c >= 0xE000 && c <= 0xFFFD)
+          || c >= 0x10000;
     }
   }
 

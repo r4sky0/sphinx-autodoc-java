@@ -733,3 +733,20 @@ def test_line_breaks_preserve_inline_formatting_and_preformatted_text():
     assert isinstance(block.children[1][0], nodes.emphasis)
     assert isinstance(block.children[2][0], nodes.emphasis)
     assert next(result.findall(nodes.literal_block)).astext() == "Code\ncontinued"
+
+
+def test_xml_invalid_characters_are_preserved_as_unicode_escapes(tmp_path):
+    # javac translates \u0000 even inside comments; XML 1.0 cannot carry it.
+    source = tmp_path / "Controls.java"
+    source.write_text(
+        "/** {@code \\u0000} is NUL; \\u0007 rings and"
+        ' <a href="https://example.test/\\u0001">links</a> keep it. */\n'
+        "public class Controls {}\n"
+    )
+    path, _ = extract([source], [], tmp_path / "cache")
+    root = read_model(path)
+    assert not root.findall("diagnostic")
+    part = element(root, "Controls").find("doc/part[@kind='body']")
+    assert part.find("code").text == "\\u0000"
+    assert "\\u0007 rings" in "".join(t.text for t in part.findall("text"))
+    assert part.find("start/attr").text == "https://example.test/\\u0001"

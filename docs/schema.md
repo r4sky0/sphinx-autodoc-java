@@ -23,6 +23,8 @@ not a general XML document interchange service. No external entities are fetched
 - Tokens: `text`, `literal`, `code`, `link`, `start`, `end`. Text is element text,
   never serialized HTML to inject. `start`/`end` carry HTML element `name`;
   `start` may contain `attr name="href"` text and a `closed` flag.
+  Characters XML 1.0 cannot represent (controls, lone surrogates), which javac
+  produces from Unicode escapes in comments, are written as `\uXXXX` text.
   Attribute entities are decoded once before XML serialization. HTML line breaks
   remain `start name="br"` tokens and render as native line blocks.
   Plain inline snippets use existing `start name="pre"`, `literal`, `end name="pre"`
