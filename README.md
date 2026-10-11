@@ -28,6 +28,7 @@ Your application's Java toolchain can stay as it is.
 | Project source/API release | Java 17, 21, and 25, tested using JDK 25's `--release` |
 | Python | 3.12+; tested versions: 3.12, 3.13, and 3.14 |
 | Sphinx | 9.1.x; tested with 9.1.0 |
+| justhtml | 3.x (≥ 3.13); tested with 3.13.0 |
 
 The [integration test](tests/test_integration.py) extracts the complete source
 fixture at each of the three Java release levels. This verifies older source/API
@@ -37,7 +38,7 @@ Other source release levels have not been tested. See the
 
 Put JDK 25's `java`, `javac`, and `javadoc` on `PATH`, or set `java_jdk` to its home
 directory in Sphinx's `conf.py`. Installing the extension installs its compatible
-Sphinx dependency.
+Sphinx dependency and the pure-Python HTML5 parser `justhtml`.
 
 ## Install
 

@@ -24,7 +24,10 @@ classifiers = [
     "Programming Language :: Java",
     "Topic :: Documentation :: Sphinx",
 ]
-dependencies = ["Sphinx>=9.1,<9.2"]
+dependencies = [
+    "justhtml>=3.13,<4",
+    "Sphinx>=9.1,<9.2",
+]
 
 [project.optional-dependencies]
 test = ["pytest>=8", "build>=1", "playwright>=1.50"]

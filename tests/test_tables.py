@@ -161,8 +161,6 @@ def test_table_without_header_rows_and_nested_tables(warnings):
 @pytest.mark.parametrize(
     ("markup", "message"),
     [
-        (start("tr") + "<text>x</text>", "<tr> needs a surrounding <table>"),
-        (start("table") + "<text>loose</text>" + end("table"), "inside <td> or <th>"),
         (
             start("table", style="width: 50%")
             + start("tr")
@@ -180,6 +178,23 @@ def test_table_without_header_rows_and_nested_tables(warnings):
 def test_invalid_table_markup_warns(warnings, markup, message):
     render(markup)
     assert any(message in warning for warning in warnings), warnings
+
+
+def test_misplaced_table_markup_is_repaired_like_browsers(warnings):
+    stray = render(start("tr") + start("td") + "<text>stray</text>")
+    assert not list(stray.findall(nodes.table))
+    assert stray.astext() == "stray"
+    loose = render(
+        start("table")
+        + "<text>loose</text>"
+        + start("tr")
+        + start("td")
+        + "<text>cell</text>"
+        + end("table")
+    )
+    assert [type(child) for child in loose.children] == [nodes.paragraph, nodes.table]
+    assert loose.children[0].astext() == "loose"
+    assert warnings == []
 
 
 class TableCells(HTMLParser):

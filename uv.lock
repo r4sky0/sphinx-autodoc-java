@@ -537,6 +537,15 @@ wheels = [
 ]
 
 [[package]]
+name = "justhtml"
+version = "3.13.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/8d/bc5deda2b18314f3fdf25f7f2b19864ac2e407fd0c417f00e80950102135/justhtml-3.13.0.tar.gz", hash = "sha256:a86c674b5d055d4d48efaa0435f8d026505b14a115988f61d043bf52b366d5a4", size = 957237, upload-time = "2026-09-30T18:18:08.813Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fd/23/9da34b355a1b3f26dab62e54570866b75b19faf133eb2a55752c577639da/justhtml-3.13.0-py3-none-any.whl", hash = "sha256:b1628903f7888cd814520c5a569acdf1713717d2a2cb8a3f7874e6e002f93f48", size = 172055, upload-time = "2026-09-30T18:18:07.246Z" },
+]
+
+[[package]]
 name = "keyring"
 version = "25.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1258,6 +1267,7 @@ name = "sphinx-java-autodoc"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "justhtml" },
     { name = "sphinx" },
 ]
 
@@ -1281,6 +1291,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "build", marker = "extra == 'test'", specifier = ">=1" },
+    { name = "justhtml", specifier = ">=3.13,<4" },
     { name = "playwright", marker = "extra == 'test'", specifier = ">=1.50" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
     { name = "sphinx", specifier = ">=9.1,<9.2" },

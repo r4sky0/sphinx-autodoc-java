@@ -21,7 +21,9 @@ not a general XML document interchange service. No external entities are fetched
   Repeated `throws` descriptions for one exception share a part, separated by
   paragraph tokens, so explicit and omitted inheritance preserve all descriptions.
 - Tokens: `text`, `literal`, `code`, `link`, `start`, `end`. Text is element text,
-  never serialized HTML to inject. `start`/`end` carry HTML element `name`;
+  never serialized HTML to inject. The renderer escapes it into an internal HTML
+  fragment for an HTML5 parser, with `literal`, `code` and `link` tokens as
+  placeholder elements; parsed markup is mapped to docutils nodes, never emitted. `start`/`end` carry HTML element `name`;
   `start` may contain `attr name="href"` text and a `closed` flag.
   Characters XML 1.0 cannot represent (controls, lone surrogates), which javac
   produces from Unicode escapes in comments, are written as `\uXXXX` text.

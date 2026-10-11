@@ -1,20 +1,59 @@
-"""Map compiler-produced comment tokens to portable docutils nodes."""
+"""Map compiler-produced comment tokens to portable docutils nodes.
+
+Comment tokens are serialized to an internal HTML fragment, with Javadoc tokens as
+placeholder elements, and parsed by an HTML5 parser. The parser repairs omitted end
+tags and misnesting like browsers do; the resulting tree maps to docutils nodes.
+"""
 
 from __future__ import annotations
 
+import html
 import re
 from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
 
 from docutils import nodes
+from justhtml import JustHTML
 from sphinx import addnodes
 from sphinx.util import logging
 
 LOGGER = logging.getLogger(__name__)
-TABLE_TAGS = {"table", "caption", "thead", "tbody", "tfoot", "tr", "th", "td"}
-TABLE_SECTIONS = {"thead", "tbody", "tfoot"}
+# Javadoc tokens travel through the HTML parser as these elements.
+PLACEHOLDER = "java-token"
+NAME = re.compile(r"[a-z][a-z0-9-]*\Z")
+ATTRIBUTE = re.compile(r"[a-z][a-z0-9:_.-]*\Z")
+VOID = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "wbr",
+}
+INLINE = {
+    "b": nodes.strong,
+    "strong": nodes.strong,
+    "i": nodes.emphasis,
+    "em": nodes.emphasis,
+    "code": nodes.literal,
+}
+TABLE_PARTS = {"caption", "thead", "tbody", "tfoot", "tr", "th", "td"}
+SUPPORTED = {"p", "ul", "ol", "li", "pre", "blockquote", "table", "a", "br"}
+SUPPORTED |= INLINE.keys() | TABLE_PARTS
+# Unsupported block elements keep their content as separate paragraphs.
+BLOCK_LEVEL = {
+    *(f"h{level}" for level in range(1, 7)),
+    *("address", "article", "aside", "center", "dd", "div", "dl", "dt", "figcaption"),
+    *("figure", "footer", "header", "hr", "main", "nav", "section"),
+}
 # Presentation attributes are dropped; Sphinx themes style native tables.
 ATTRIBUTES = {
+    "a": {"href"},
     "pre": {"lang"},
     "table": {"class", "summary", "border"},
     "th": {"colspan", "rowspan", "scope"},
@@ -42,32 +81,161 @@ def reference(token: ET.Element, children: list[nodes.Node]) -> nodes.Node:
 
 
 def comment(part: ET.Element, location) -> list[nodes.Node]:
-    root = nodes.container()
-    stack: list[tuple[str, nodes.Element]] = [("root", root)]
-    block_tags = {"p", "ul", "ol", "li", "pre", "blockquote"}
-    supported = block_tags | TABLE_TAGS | {"code", "b", "strong", "i", "em", "a", "br"}
-    head_rows: set[int] = set()
-    header_cells: set[int] = set()
-
     def warn(message):
         LOGGER.warning(message, location=location, type="java", subtype="html")
 
-    def close(tag):
-        for i in range(len(stack) - 1, 0, -1):
-            if stack[i][0] == tag:
-                del stack[i:]
-                return
+    def unsupported(name):
+        warn(
+            f"Unsupported Javadoc HTML <{name}>; use paragraphs, lists, tables, emphasis, links or <pre>."
+        )
 
-    def unwind(tags):
-        """Closes elements above the innermost open tag in ``tags`` and returns it."""
-        for i in range(len(stack) - 1, 0, -1):
-            if stack[i][0] in tags:
-                del stack[i + 1 :]
-                return stack[i][0]
-        return None
+    tokens: list[ET.Element] = []
 
-    def span(attrs, name):
-        value = attrs.get(name, "1")
+    def serialize() -> str:
+        markup = []
+        for token in part:
+            tag = token.tag
+            if tag == "text":
+                markup.append(html.escape(token.text or "", quote=False))
+            elif tag in {"literal", "code", "link"}:
+                markup.append(f'<{PLACEHOLDER} data-i="{len(tokens)}"></{PLACEHOLDER}>')
+                tokens.append(token)
+            elif tag in {"start", "end"}:
+                name = token.get("name", "").lower()
+                if name == PLACEHOLDER or not NAME.match(name):
+                    unsupported(name)
+                elif tag == "end":
+                    markup.append(f"</{name}>")
+                else:
+                    attrs = "".join(
+                        f' {key}="{html.escape(attr.text or "")}"'
+                        for attr in token
+                        if ATTRIBUTE.match(key := (attr.get("name") or "").lower())
+                    )
+                    markup.append(f"<{name}{attrs}>")
+                    # A self-closed <p/> or <td/> is empty, unlike in HTML parsing.
+                    if token.get("closed") == "true" and name not in VOID:
+                        markup.append(f"</{name}>")
+            else:
+                warn(f"Unsupported XML comment token {tag}; regenerate the model.")
+        return "".join(markup)
+
+    def check_attributes(element):
+        if any(key not in ATTRIBUTES.get(element.name, set()) for key in element.attrs):
+            warn(
+                f"Javadoc HTML attributes on <{element.name}> are not supported except href on links, lang on pre and table structure; move layout and assets to a guide."
+            )
+
+    def token_node(element) -> nodes.Node:
+        token = tokens[int(element.attrs["data-i"])]
+        if token.tag == "code":
+            return nodes.literal("", token.text or "")
+        if token.tag == "literal":
+            # Verbatim text such as {@literal} and {@value} keeps straight quotes.
+            return nodes.inline("", token.text or "", support_smartquotes=False)
+        label = comment(token, location)
+        return reference(token, [child for p in label for child in p.children])
+
+    def inline(element) -> list[nodes.Node]:
+        if element.name == "#text":
+            return [nodes.Text(re.sub(r"\s+", " ", element.data))]
+        if element.name == PLACEHOLDER:
+            return [token_node(element)]
+        if element.name == "br":
+            return [nodes.line()]
+        check_attributes(element)
+        children = [node for child in element.children for node in inline(child)]
+        if element.name in INLINE:
+            return [INLINE[element.name]("", "", *children)]
+        if element.name == "a":
+            href = element.attrs.get("href", "")
+            if urlsplit(href).scheme in {"https", "http", "mailto"}:
+                return [nodes.reference("", "", *children, refuri=href)]
+            warn(
+                f"Unsupported Javadoc HTML link {href!r}; use a Java {{@link}} or an absolute https URL."
+            )
+        elif element.name in SUPPORTED:
+            warn(f"Javadoc <{element.name}> cannot appear inside inline text.")
+        else:
+            unsupported(element.name)
+        return children
+
+    def preformatted(element) -> str:
+        text = []
+        for child in element.children:
+            if child.name == "#text":
+                text.append(child.data)
+            elif child.name == PLACEHOLDER:
+                text.append(token_node(child).astext())
+            elif child.name == "br":
+                text.append("\n")
+            else:
+                if child.name != "code":
+                    warn(
+                        f"Unsupported nested HTML <{child.name}> inside <pre>; use escaped code."
+                    )
+                text.append(preformatted(child))
+        return "".join(text)
+
+    def blocks(element) -> list[nodes.Node]:
+        """Converts children, collecting inline runs into paragraphs."""
+        result: list[nodes.Node] = []
+        run: list[nodes.Node] = []
+
+        def flush():
+            if run:
+                result.append(nodes.paragraph("", "", *run))
+                run.clear()
+
+        for child in element.children:
+            block = block_node(child)
+            if block is None:
+                run.extend(inline(child))
+            else:
+                flush()
+                result.extend(block)
+        flush()
+        return result
+
+    def block_node(element) -> list[nodes.Node] | None:
+        name = element.name
+        if name not in {"p", "ul", "ol", "li", "pre", "blockquote", "table"}:
+            if name in BLOCK_LEVEL:
+                unsupported(name)
+                return blocks(element)
+            return None
+        check_attributes(element)
+        if name == "p":
+            return [nodes.paragraph("", "", *inline_children(element))]
+        if name == "blockquote":
+            return [nodes.block_quote("", *blocks(element))]
+        if name == "pre":
+            language = element.attrs.get("lang", "java")
+            text = preformatted(element)
+            return [nodes.literal_block(text, text, language=language)]
+        if name == "li":
+            warn("Javadoc <li> needs a surrounding <ul> or <ol>.")
+            return blocks(element)
+        if name == "table":
+            return table(element)
+        items = (
+            nodes.bullet_list()
+            if name == "ul"
+            else nodes.enumerated_list(enumtype="arabic", start=1)
+        )
+        for child in element.children:
+            if child.name == "li":
+                check_attributes(child)
+                items += nodes.list_item("", *blocks(child))
+            elif nodes.Element("", *inline(child)).astext().strip():
+                warn("Javadoc list content must be inside <li>.")
+        return [items]
+
+    def inline_children(element) -> list[nodes.Node]:
+        return [node for child in element.children for node in inline(child)]
+
+    def span(cell, name):
+        value = cell.attrs.get(name, "1")
         if not value.strip().isdigit() or int(value) < 1:
             warn(
                 f"Invalid {name} {value!r} on a Javadoc table cell; use a positive integer."
@@ -75,235 +243,49 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
             return 1
         return min(int(value), SPAN_LIMITS[name])
 
-    def table_start(name, attrs):
-        """Opens table structure; HTML's optional end tags close implicitly."""
-        close("p")
-        if name == "table":
-            node = nodes.table(classes=["colwidths-auto", "java-table"])
-            stack[-1][1].append(node)
-            return node
-        table = next((node for tag, node in reversed(stack) if tag == "table"), None)
-        if table is None:
-            warn(f"Javadoc <{name}> needs a surrounding <table>.")
-            return None
-        if name == "caption" or name in TABLE_SECTIONS:
-            unwind({"table"})
-        if name == "caption":
-            if table.children and isinstance(table.children[0], nodes.title):
-                warn("Javadoc <table> has more than one <caption>.")
-                return None
-            node = nodes.title()
-            table.insert(0, node)
-            return node
-        if name in TABLE_SECTIONS:
-            return table
-        section = unwind({"table", *TABLE_SECTIONS, "tr"})
-        if name == "tr" or section != "tr":
-            unwind({"table", *TABLE_SECTIONS})
-            row = nodes.row()
-            table += row
-            if stack[-1][0] == "thead":
-                head_rows.add(id(row))
-            if name == "tr":
-                return row
-            stack.append(("tr", row))
-        node = nodes.entry()
-        if (cols := span(attrs, "colspan")) > 1:
-            node["morecols"] = cols - 1
-        if (rows := span(attrs, "rowspan")) > 1:
-            node["morerows"] = rows - 1
-        if name == "th":
-            header_cells.add(id(node))
-        stack[-1][1].append(node)
-        return node
-
-    def table_finish(table):
-        """Lays out collected rows on a grid as a docutils table with a header."""
-        rows = [child for child in table.children if isinstance(child, nodes.row)]
+    def table(element) -> list[nodes.Node]:
+        node = nodes.table(classes=["colwidths-auto", "java-table"])
+        rows: list[nodes.row] = []
+        header: list[bool] = []
+        for child in element.children:
+            if child.name == "caption":
+                if node.children:
+                    warn("Javadoc <table> has more than one <caption>.")
+                else:
+                    node += nodes.title("", "", *inline_children(child))
+            elif child.name in {"thead", "tbody", "tfoot"}:
+                check_attributes(child)
+                for tr in child.children:
+                    if tr.name != "tr":
+                        continue
+                    check_attributes(tr)
+                    row = nodes.row()
+                    only_th = True
+                    for cell in tr.children:
+                        if cell.name not in {"td", "th"}:
+                            continue
+                        check_attributes(cell)
+                        entry = nodes.entry("", *blocks(cell))
+                        if (cols := span(cell, "colspan")) > 1:
+                            entry["morecols"] = cols - 1
+                        if (rowspan := span(cell, "rowspan")) > 1:
+                            entry["morerows"] = rowspan - 1
+                        only_th &= cell.name == "th"
+                        row += entry
+                    rows.append(row)
+                    header.append(
+                        child.name == "thead" or bool(row.children) and only_th
+                    )
         if not rows:
             warn("Javadoc <table> has no rows; use <tr> with <td> or <th> cells.")
-            table.parent.remove(table)
-            return
-        occupied: set[tuple[int, int]] = set()
-        widths: dict[int, int] = {}
-        for r, row in enumerate(rows):
-            c = 0
-            for entry in row.children:
-                while (r, c) in occupied:
-                    c += 1
-                if not entry.get("morecols"):
-                    # The text builder adds quotes or asterisks around inline markup.
-                    markup = entry.findall(
-                        lambda n: isinstance(
-                            n, (nodes.literal, nodes.emphasis, nodes.strong)
-                        )
-                    )
-                    width = max(map(len, entry.astext().splitlines() or [""]))
-                    width += 2 * len(list(markup))
-                    widths[c] = max(widths.get(c, 1), min(width, 40))
-                entry["morerows"] = min(entry.get("morerows", 0), len(rows) - r - 1)
-                for dr in range(entry.get("morerows", 0) + 1):
-                    for dc in range(entry.get("morecols", 0) + 1):
-                        occupied.add((r + dr, c + dc))
-                c += entry.get("morecols", 0) + 1
-        columns = max(c for _, c in occupied) + 1
-        for r, row in enumerate(rows):
-            row.extend(nodes.entry() for c in range(columns) if (r, c) not in occupied)
-        head = 0
-        while head < len(rows) and (
-            id(rows[head]) in head_rows
-            or rows[head].children
-            and all(id(entry) in header_cells for entry in rows[head].children)
-        ):
-            head += 1
-        if head == len(rows):
-            head = 0
-        group = nodes.tgroup(cols=columns)
-        # Text and LaTeX builders size columns from colwidth; HTML sizes automatically.
-        group.extend(nodes.colspec(colwidth=widths.get(c, 1)) for c in range(columns))
-        if head:
-            group += nodes.thead("", *rows[:head])
-        group += nodes.tbody("", *rows[head:])
-        table.children = [c for c in table.children if isinstance(c, nodes.title)]
-        table += group
+            return []
+        layout(node, rows, header)
+        return [node]
 
-    def append(node):
-        current = stack[-1][1]
-        if isinstance(current, nodes.literal_block):
-            current += nodes.Text(node.astext())
-            return
-        if isinstance(current, (nodes.table, nodes.row)):
-            if node.astext().strip():
-                warn("Javadoc table content must be inside <td> or <th>.")
-            return
-        if isinstance(
-            current, (nodes.container, nodes.list_item, nodes.block_quote, nodes.entry)
-        ):
-            if isinstance(node, nodes.Text) and not node.astext().strip():
-                return
-            if not current.children or not isinstance(
-                current.children[-1], nodes.paragraph
-            ):
-                current += nodes.paragraph()
-            current.children[-1] += node
-        elif isinstance(current, (nodes.bullet_list, nodes.enumerated_list)):
-            if node.astext().strip():
-                warn("Javadoc list content must be inside <li>.")
-        else:
-            current += node
-
-    def tokens(items):
-        for token in items:
-            tag = token.tag
-            if tag in {"text", "literal", "code"}:
-                value = token.text or ""
-                if (
-                    not any(isinstance(n, nodes.literal_block) for _, n in stack)
-                    and tag == "text"
-                ):
-                    value = re.sub(r"\s+", " ", value)
-                if tag == "code":
-                    append(nodes.literal("", value))
-                elif tag == "literal":
-                    # Verbatim text such as {@literal} and {@value} keeps straight quotes.
-                    append(nodes.inline("", value, support_smartquotes=False))
-                else:
-                    append(nodes.Text(value))
-            elif tag == "link":
-                label = comment(token, location)
-                inline = [child for p in label for child in p.children]
-                append(reference(token, inline))
-            elif tag == "start":
-                name = token.get("name", "").lower()
-                attrs = {a.get("name"): a.text or "" for a in token}
-                if name not in supported:
-                    warn(
-                        f"Unsupported Javadoc HTML <{name}>; use paragraphs, lists, tables, emphasis, links or <pre>."
-                    )
-                    continue
-                if any(k not in ATTRIBUTES.get(name, {"href"}) for k in attrs):
-                    warn(
-                        f"Javadoc HTML attributes on <{name}> are not supported except href on links, lang on pre and table structure; move layout and assets to a guide."
-                    )
-                if name == "br":
-                    append(
-                        nodes.Text("\n")
-                        if isinstance(stack[-1][1], nodes.literal_block)
-                        else nodes.line()
-                    )
-                    continue
-                if any(isinstance(n, nodes.literal_block) for _, n in stack):
-                    if name != "code":
-                        warn(
-                            f"Unsupported nested HTML <{name}> inside <pre>; use escaped code."
-                        )
-                    continue
-                if name in TABLE_TAGS:
-                    node = table_start(name, attrs)
-                    if node is not None and token.get("closed") != "true":
-                        stack.append((name, node))
-                    continue
-                if name in block_tags:
-                    if isinstance(stack[-1][1], (nodes.table, nodes.row)):
-                        warn(
-                            f"Javadoc <{name}> in a table must be inside <td> or <th>."
-                        )
-                        continue
-                    close("p")
-                    if name == "li":
-                        for open_tag, _ in reversed(stack):
-                            if open_tag in {"ul", "ol"}:
-                                break
-                            if open_tag == "li":
-                                close("li")
-                                break
-                    if name == "p":
-                        node = nodes.paragraph()
-                    elif name == "ul":
-                        node = nodes.bullet_list()
-                    elif name == "ol":
-                        node = nodes.enumerated_list(enumtype="arabic", start=1)
-                    elif name == "li":
-                        node = nodes.list_item()
-                    elif name == "pre":
-                        node = nodes.literal_block(
-                            "", "", language=attrs.get("lang", "java")
-                        )
-                    else:
-                        node = nodes.block_quote()
-                    if name == "li" and not isinstance(
-                        stack[-1][1], (nodes.bullet_list, nodes.enumerated_list)
-                    ):
-                        warn("Javadoc <li> needs a surrounding <ul> or <ol>.")
-                        continue
-                    stack[-1][1].append(node)
-                else:
-                    if name in {"b", "strong"}:
-                        node = nodes.strong()
-                    elif name in {"i", "em"}:
-                        node = nodes.emphasis()
-                    elif name == "code":
-                        node = nodes.literal()
-                    else:
-                        href = attrs.get("href", "")
-                        if urlsplit(href).scheme not in {"https", "http", "mailto"}:
-                            warn(
-                                f"Unsupported Javadoc HTML link {href!r}; use a Java {{@link}} or an absolute https URL."
-                            )
-                            node = nodes.inline()
-                        else:
-                            node = nodes.reference("", "", refuri=href)
-                    append(node)
-                if token.get("closed") != "true":
-                    stack.append((name, node))
-            elif tag == "end":
-                close(token.get("name", "").lower())
-            else:
-                warn(f"Unsupported XML comment token {tag}; regenerate the model.")
-
-    tokens(part)
-    for table in reversed(list(root.findall(nodes.table))):
-        table_finish(table)
+    document = JustHTML(serialize(), fragment=True, sanitize=False, collect_errors=True)
+    for error in document.errors:
+        warn(f"Malformed Javadoc HTML: {error.message}.")
+    root = nodes.container("", *blocks(document.root))
 
     def split_lines(element):
         lines = [element.copy()]
@@ -330,6 +312,47 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
         elif not p.astext().strip():
             p.parent.remove(p)
     return root.children
+
+
+def layout(table: nodes.table, rows: list[nodes.row], header: list[bool]) -> None:
+    """Places rows on a grid, pads short rows and splits off leading header rows."""
+    occupied: set[tuple[int, int]] = set()
+    widths: dict[int, int] = {}
+    for r, row in enumerate(rows):
+        c = 0
+        for entry in row.children:
+            while (r, c) in occupied:
+                c += 1
+            if not entry.get("morecols"):
+                # The text builder adds quotes or asterisks around inline markup.
+                markup = entry.findall(
+                    lambda n: isinstance(
+                        n, (nodes.literal, nodes.emphasis, nodes.strong)
+                    )
+                )
+                width = max(map(len, entry.astext().splitlines() or [""]))
+                width += 2 * len(list(markup))
+                widths[c] = max(widths.get(c, 1), min(width, 40))
+            entry["morerows"] = min(entry.get("morerows", 0), len(rows) - r - 1)
+            for dr in range(entry.get("morerows", 0) + 1):
+                for dc in range(entry.get("morecols", 0) + 1):
+                    occupied.add((r + dr, c + dc))
+            c += entry.get("morecols", 0) + 1
+    columns = max((c for _, c in occupied), default=0) + 1
+    for r, row in enumerate(rows):
+        row.extend(nodes.entry() for c in range(columns) if (r, c) not in occupied)
+    head = 0
+    while head < len(rows) and header[head]:
+        head += 1
+    if head == len(rows):
+        head = 0
+    group = nodes.tgroup(cols=columns)
+    # Text and LaTeX builders size columns from colwidth; HTML sizes automatically.
+    group.extend(nodes.colspec(colwidth=widths.get(c, 1)) for c in range(columns))
+    if head:
+        group += nodes.thead("", *rows[:head])
+    group += nodes.tbody("", *rows[head:])
+    table += group
 
 
 def documentation(element: ET.Element, location) -> list[nodes.Node]:

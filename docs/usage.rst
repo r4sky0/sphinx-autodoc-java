@@ -305,7 +305,7 @@ HTML tables become native Sphinx tables with ``<caption>`` as the table title. R
 ``</td>``, ``</th>`` and ``</tr>`` end tags are inferred. Cells can contain paragraphs,
 lists, code and nested tables. ``class``, ``summary`` and ``border`` on ``<table>`` and
 ``scope`` on cells are accepted but have no effect: themes style tables. Other
-attributes and text outside cells warn. ``<th>`` cells outside the header render as
+attributes warn. ``<th>`` cells outside the header render as
 ordinary cells. Wide tables scroll horizontally within the content column, and code in
 cells is not wrapped. Text from ``{@literal}`` and ``{@value}`` keeps straight quotes
 because Sphinx's smart quotes are not applied to it.
@@ -330,7 +330,12 @@ and retain the original tag as literal text. Markup detection is conservative:
 reserved markup tags following ``//`` or ``#`` also warn inside quoted examples.
 
 ``///`` Markdown comments, unsupported tags and unsupported HTML produce warnings
-with an alternative or source symbol. Malformed comments and unresolved links also
+with an alternative or source symbol. Comment HTML is parsed with an HTML5 parser,
+which infers omitted end tags and repairs misnested markup as browsers do; remaining
+parse errors warn as malformed HTML. Misplaced table markup is repaired without a
+warning: a stray ``<tr>`` or ``<td>`` outside a table keeps only its text, and content
+inside ``<table>`` but outside cells moves before the table. Malformed comments and
+unresolved links also
 warn. Run strict builds::
 
    sphinx-build -W --keep-going docs docs/_build/html
