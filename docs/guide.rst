@@ -6,33 +6,31 @@ guide should answer "Which method should I use, and how do I get started?"
 Keep the contract in Javadoc and put the task, choices and working example in
 a handwritten Sphinx page.
 
-This page uses the repository's ``demo`` fixture to show the pattern. Replace
-its names and task with your library's real use case.
+This page links into the :doc:`Apache Commons Lang API <showcase>` to show the
+pattern. Replace its names and task with your library's real use case.
 
 Start with a task and an expected result
 ----------------------------------------
 
-Suppose a reader wants to turn an integer into decimal text. A short guide can
-give them the right overload, runnable statements and the result:
+Suppose a reader wants to shorten a long title. A short guide can give them the
+right overload, runnable statements and the result:
 
-.. topic:: Example guide: Convert a number to text
+.. topic:: Example guide: Shorten a title
 
-   Use :java:method:`convert(int) <demo.Widget#convert(int)>` on a
-   :java:type:`Widget <demo.Widget>` when your input is an integer.
+   Use :java:method:`abbreviate(String, int) <org.apache.commons.lang3.StringUtils#abbreviate(java.lang.String,int)>`
+   on :java:type:`StringUtils <org.apache.commons.lang3.StringUtils>` to cut text
+   from the end.
 
    .. code-block:: java
 
-      import demo.Widget;
+      import org.apache.commons.lang3.StringUtils;
 
       // Inside your method:
-      Widget widget = new Widget();
-      String text = widget.convert(42);
-      System.out.println(text); // 42
+      String title = StringUtils.abbreviate("Now is the time for all good men", 15);
+      System.out.println(title); // Now is the t...
 
-   If your input is already text, see
-   :java:method:`convert(String) <demo.Widget#convert(java.lang.String)>`.
-   Its documentation inherits the transformation contract from
-   :java:type:`Transformer <demo.Transformer>`.
+   To keep a window around an offset instead, see
+   :java:method:`abbreviate(String, int, int) <org.apache.commons.lang3.StringUtils#abbreviate(java.lang.String,int,int)>`.
 
 The example gives the reader a choice and a result before sending them into
 the reference. Use the same sequence for your library: state the goal, show the
@@ -46,8 +44,8 @@ readable while the target identifies the exact overload:
 
 .. code-block:: rst
 
-   Use :java:method:`convert(int) <demo.Widget#convert(int)>`
-   on a :java:type:`Widget <demo.Widget>`.
+   Use :java:method:`abbreviate(String, int) <org.apache.commons.lang3.StringUtils#abbreviate(java.lang.String,int)>`
+   on :java:type:`StringUtils <org.apache.commons.lang3.StringUtils>`.
 
 Use fully qualified names in targets. For overloaded methods, include the erased,
 fully qualified parameter types, such as ``java.lang.String``. The label can use
@@ -61,8 +59,8 @@ To include a type's Javadoc and selected members directly in a guide:
 
 .. code-block:: rst
 
-   .. java:autoclass:: demo.Widget
-      :members: convert(int)
+   .. java:autoclass:: org.apache.commons.lang3.StringUtils
+      :members: abbreviate(java.lang.String,int)
       :no-index:
 
 ``:no-index:`` lets the excerpt coexist with the canonical generated API page.
@@ -73,7 +71,7 @@ to include only the type's declaration and description.
 Add your guide to the site
 --------------------------
 
-Save your page as ``docs/convert.rst`` and include it before the reference in
+Save your page as ``docs/shorten.rst`` and include it before the reference in
 ``docs/index.rst``:
 
 .. code-block:: rst
@@ -84,7 +82,7 @@ Save your page as ``docs/convert.rst`` and include it before the reference in
    .. toctree::
       :maxdepth: 2
 
-      convert
+      shorten
       api/index
 
 Rebuild with ``sphinx-build -W --keep-going -n docs docs/_build/html`` and follow

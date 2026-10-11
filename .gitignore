@@ -8,6 +8,8 @@ docs/_build/
 docs/api/
 examples/**/target/
 examples/**/build/
+examples/**/docs/_build/
+examples/**/docs/api/
 
 
 .java-autodoc-cache/

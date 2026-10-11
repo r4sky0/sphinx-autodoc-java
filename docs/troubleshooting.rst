@@ -30,7 +30,7 @@ Private, package-private and ``@hidden`` declarations are omitted. Methods that
 are inherited without an override stay on the declaring ancestor's page.
 
 In a handwritten guide, use a fully qualified target. Include parameter types
-for overloaded methods, for example ``demo.Widget#convert(java.lang.String)``.
+for overloaded methods, for example ``org.apache.commons.lang3.StringUtils#abbreviate(java.lang.String,int)``.
 A member selection uses semicolons between entries. See :doc:`usage` for the
 exact role and directive syntax and external Javadoc configuration.
 

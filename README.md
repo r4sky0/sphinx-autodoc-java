@@ -17,7 +17,7 @@ APIs and renders them as native Sphinx content:
 - Pages that refresh when sources change, with content-based extraction caching.
 
 Extraction never executes application classes or annotation processors, and never
-downloads Java dependencies. See the [example API](https://r4sky0.github.io/sphinx-java-autodoc/api/)
+downloads Java dependencies. See the [Apache Commons Lang example](https://r4sky0.github.io/sphinx-java-autodoc/showcase/commons-lang/)
 for what the output looks like.
 
 ## Requirements
@@ -67,6 +67,7 @@ uv sync --locked
 uv run --locked pre-commit install
 uv run --locked pre-commit run --all-files
 uv run --locked pytest
+uv run --locked python showcase/build.py
 uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
 ```
 
