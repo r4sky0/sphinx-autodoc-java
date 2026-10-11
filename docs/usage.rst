@@ -291,9 +291,28 @@ scope. Class and constructor comments do not inherit. Explicit unresolved inheri
 is visibly marked and warned; missing inherited parts also warn. This is not a full
 replacement for standard Javadoc's DocLint or all standard-doclet synthesis.
 
-``{@snippet}``, ``///`` Markdown comments, unsupported tags and unsupported HTML
-produce warnings with an alternative or source symbol. Snippets are not executed or
-expanded. Malformed comments and unresolved links also warn. Run strict builds::
+Plain inline snippets become native literal blocks, with Java highlighting by
+default. An optional ``lang`` selects a Sphinx/Pygments language (such as ``text``):
+
+.. code-block:: java
+
+   /** Example:
+    * {@snippet lang="java" :
+    *     System.out.println("Hello");
+    * }
+    */
+
+Indentation follows JDK ``String.stripIndent`` rules, including the closing brace's
+indentation. Snippet content is literal: HTML entities, Javadoc tags and RST syntax
+inside the body are preserved rather than interpreted. Snippets are never executed.
+External/hybrid snippets (``file``/``class``), regions, IDs, duplicate attributes and
+markup actions (``@highlight``, ``@replace``, ``@link``, ``@start``, ``@end``) warn
+and retain the original tag as literal text. Markup detection is conservative:
+reserved markup tags following ``//`` or ``#`` also warn inside quoted examples.
+
+``///`` Markdown comments, unsupported tags and unsupported HTML produce warnings
+with an alternative or source symbol. Malformed comments and unresolved links also
+warn. Run strict builds::
 
    sphinx-build -W --keep-going docs docs/_build/html
    sphinx-java-autodoc src/main/java -o build/api.xml --warnings-as-errors

@@ -87,9 +87,11 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                         f"Unsupported Javadoc HTML <{name}>; use paragraphs, lists, emphasis, links or <pre>."
                     )
                     continue
-                if any(k not in {"href"} for k in attrs):
+                if any(
+                    k not in ({"lang"} if name == "pre" else {"href"}) for k in attrs
+                ):
                     warn(
-                        f"Javadoc HTML attributes on <{name}> are not supported except href; move layout and assets to a guide."
+                        f"Javadoc HTML attributes on <{name}> are not supported except href on links and lang on pre; move layout and assets to a guide."
                     )
                 if name == "br":
                     append(
@@ -122,7 +124,9 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                     elif name == "li":
                         node = nodes.list_item()
                     elif name == "pre":
-                        node = nodes.literal_block("", "", language="java")
+                        node = nodes.literal_block(
+                            "", "", language=attrs.get("lang", "java")
+                        )
                     else:
                         node = nodes.block_quote()
                     if name == "li" and not isinstance(

@@ -352,6 +352,28 @@ public final class SphinxDoclet implements Doclet {
         if (label.isEmpty()) text(n, "text", ref.toString());
         else emit(n, owner, "label", label, new HashSet<>());
     }
+    private void snippet(org.w3c.dom.Element parent, Element owner, SnippetTree snippet) {
+        String language = "java";
+        boolean supported = snippet.getBody() != null && snippet.getAttributes().size() <= 1;
+        for (var attribute : snippet.getAttributes()) {
+            if (attribute instanceof AttributeTree a && a.getName().contentEquals("lang")) {
+                language = a.getValue().stream().map(Object::toString).collect(Collectors.joining());
+                supported &= language.matches("[A-Za-z0-9_+.-]+");
+            } else supported = false;
+        }
+        String body = snippet.getBody() == null ? "" : snippet.getBody().getBody();
+        // shortcut: conservatively detect markup comments; replace with a markup parser when supporting regions/actions.
+        supported &= !body.matches("(?s).*(?://|#)[^\\r\\n]*@(?:start|end|highlight|replace|link)\\b.*");
+        if (!supported) {
+            warn(owner, "Unsupported snippet attributes or markup; use an inline body with optional lang, without files, regions, IDs or markup actions.");
+            text(parent, "literal", snippet.toString()); return;
+        }
+        var start = add(parent, "start"); start.setAttribute("name", "pre");
+        var languageAttribute = add(start, "attr"); languageAttribute.setAttribute("name", "lang");
+        languageAttribute.setTextContent(language);
+        text(parent, "literal", body.stripIndent());
+        add(parent, "end").setAttribute("name", "pre");
+    }
     private void emit(org.w3c.dom.Element parent, Element owner, String key, List<? extends DocTree> content, Set<String> chain) {
         for (var t : content) {
             if (t instanceof ErroneousTree v) {
@@ -359,6 +381,7 @@ public final class SphinxDoclet implements Doclet {
                 text(parent, "literal", v.getBody());
             } else if (t instanceof TextTree v) text(parent, "text", v.getBody());
             else if (t instanceof LiteralTree v) text(parent, t.getKind() == DocTree.Kind.CODE ? "code" : "literal", v.getBody().getBody());
+            else if (t instanceof SnippetTree s) snippet(parent, owner, s);
             else if (t instanceof EntityTree v) text(parent, "text", Objects.requireNonNullElse(trees.getCharacters(v), v.toString()));
             else if (t instanceof LinkTree l) reference(parent, owner, l.getReference(), l.getLabel(), t.getKind() == DocTree.Kind.LINK_PLAIN);
             else if (t instanceof ReferenceTree r) reference(parent, owner, r, List.of(), false);
@@ -393,7 +416,7 @@ public final class SphinxDoclet implements Doclet {
                 }
             } else if (t instanceof ReturnTree r) emit(parent, owner, "return", r.getDescription(), chain);
             else if (t.getKind() != DocTree.Kind.COMMENT) {
-                warn(owner, "Unsupported Javadoc construct " + t.getKind() + "; use traditional text or <pre>{@code ...}</pre> (snippet and Markdown expansion are deferred).");
+                warn(owner, "Unsupported Javadoc construct " + t.getKind() + "; use traditional text or <pre>{@code ...}</pre> (Markdown expansion is deferred).");
                 text(parent, "literal", t.toString());
             }
         }
