@@ -389,6 +389,9 @@ public final class SphinxDoclet implements Doclet {
     }
     if (!comment.getFullBody().isEmpty()) {
       result.put("body", new Part(e, "", comment.getFullBody()));
+      if (comment.getFullBody().getFirst() instanceof ReturnTree ret && ret.isInline()) {
+        result.put("return", new Part(e, "", ret.getDescription()));
+      }
     }
     int see = 0;
     for (var tag : comment.getBlockTags()) {
@@ -664,7 +667,11 @@ public final class SphinxDoclet implements Doclet {
         case StartElementTree start -> startElement(parent, start);
         case EndElementTree end -> parent.add("end").set("name", end.getName().toString());
         case InheritDocTree inherit -> inheritDoc(parent, owner, key, inherit, chain);
-        case ReturnTree ret -> emit(parent, owner, "return", ret.getDescription(), chain);
+        case ReturnTree ret -> {
+          parent.addText("text", "Returns ");
+          emit(parent, owner, "return", ret.getDescription(), chain);
+          parent.addText("text", ".");
+        }
         default -> {
           if (tree.getKind() != DocTree.Kind.COMMENT) {
             warn(

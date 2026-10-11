@@ -50,9 +50,18 @@ release; use non-modular roots or explicitly enumerate declaration files. Cross-
 JPMS identity, module paths and split packages are deferred.
 
 A binary dependency is enough to resolve a reference or signature. To inherit its
-Javadoc, supply its source as an additional source root. Such roots also become
-eligible for generated pages; when you only want selected types, leave
-``java_generate`` empty and use explicit directives.
+Javadoc, set ``java_sourcepath`` to directories containing dependency sources:
+
+.. code-block:: python
+
+   java_sources = ["../src/main/java"]
+   java_sourcepath = ["../dependency-sources"]
+
+These directories supply compiler lookup and ancestor comments, but are not
+selected for API pages. The CLI accepts repeated ``--sourcepath DIRECTORY``
+arguments. Lookup source contents and order participate in cache invalidation;
+changing an ancestor comment refreshes the consuming documentation. Published
+source roots take precedence over lookup-only roots. Supply non-JPMS directories.
 
 Explicit extraction and rendering
 ---------------------------------
