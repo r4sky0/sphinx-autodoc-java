@@ -19,7 +19,7 @@ Read [the architecture decision](docs/adr-001.md) before changing this boundary.
 - `tests/test_integration.py`: real JDK/Sphinx integration tests.
 - `tests/visual_check.py`: opt-in browser checks for Alabaster and Classic.
 - `examples/`: standalone, Maven, Gradle and dependency fixtures.
-- `experiments/`: retained extraction proof; `docs/`: guides and release evidence.
+- `docs/`: user guides, reference, compatibility record and design notes.
 
 ## Implementation rules
 
@@ -45,7 +45,7 @@ Read [the architecture decision](docs/adr-001.md) before changing this boundary.
 ## Development and checks
 
 Use JDK 25 (`java`, `javac`, `javadoc` on `PATH`), Python 3.12+, and Sphinx 9.1.x.
-The exact tested range and known limits live in [docs/validation.md](docs/validation.md);
+The exact tested range and known limits live in [docs/compatibility.rst](docs/compatibility.rst);
 configured CI jobs are not evidence that an environment has passed.
 
 ```sh
@@ -75,4 +75,4 @@ without testing.
 - Keep the project version in `pyproject.toml` and `VERSION` in `extractor.py` in
   sync when preparing a release. Follow `CONTRIBUTING.md` for release procedures.
 - Update usage documentation and recorded limitations when behavior changes.
-  Research sources and deferred work are in `docs/research.md` and `docs/roadmap.md`.
+  Rejected alternatives are in `docs/adr-001.md`; deferred work is in `docs/roadmap.md`.

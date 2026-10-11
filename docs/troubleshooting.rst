@@ -44,7 +44,7 @@ Comments are incomplete or produce warnings
 -------------------------------------------
 
 Traditional Javadoc descriptions, common tags and plain inline ``{@snippet}``
-bodies are supported; see :doc:`usage` for the supported content. ``///`` Markdown
+bodies are supported; see :doc:`javadoc-support` for the supported content. ``///`` Markdown
 comments, unsupported tags and unsupported HTML warn with an alternative or source
 symbol. External/hybrid snippets, regions, IDs and markup actions warn and keep the
 original tag as literal text; snippets are never executed. Malformed comments and

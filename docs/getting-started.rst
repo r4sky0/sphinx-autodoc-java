@@ -17,18 +17,16 @@ project root:
        conf.py              # Sphinx configuration
        index.rst            # documentation home page
 
-Use traditional Javadoc comments; plain inline ``{@snippet}`` bodies render as
-code blocks. Markdown Javadoc (``///``) and external or marked-up snippets produce
-warnings; JPMS ``module-info.java`` inputs and Lombok-like transformations
-are unsupported. See :doc:`troubleshooting` for alternatives and diagnostics.
+Use traditional Javadoc comments; see :doc:`javadoc-support` for what renders.
+JPMS ``module-info.java`` inputs and Lombok-like transformations are unsupported.
 
 Install the extension
 ---------------------
 
 Use Python 3.12+ and **JDK 25 for documentation extraction**, even if your library
-targets an older Java release. Check that ``java -version``, ``javac -version``
-and ``javadoc --version`` select JDK 25. Installing the extension also installs
-its compatible Sphinx dependency (9.1.x).
+targets an older Java release; see :doc:`compatibility` for tested versions. Check
+that ``java -version``, ``javac -version`` and ``javadoc --version`` select JDK 25.
+Installing the extension also installs its compatible Sphinx dependency.
 
 From an existing uv project:
 
@@ -42,8 +40,7 @@ Or install into an existing Python virtual environment:
 
    python -m pip install "git+https://github.com/r4sky0/sphinx-java-autodoc.git"
 
-The current release is installed from GitHub or a locally built wheel; it has
-not been published to PyPI. For contributor setup, see :doc:`design`.
+The extension has not been published to PyPI yet, so install it from GitHub.
 
 Point Sphinx at your sources
 ----------------------------
@@ -61,8 +58,7 @@ append ``"sphinx_java_autodoc"`` to it instead of replacing the list.
    java_visibility = "public"
 
 ``java_sources`` is relative to ``conf.py``. Set ``java_release`` to your
-library's source/API target; Java 17, 21 and 25 have been tested on JDK 25.
-Omitting it uses the selected JDK's default release. If JDK 25 is not on
+library's source/API target. Omitting it uses the selected JDK's default release. If JDK 25 is not on
 ``PATH``, add ``java_jdk = "/path/to/jdk-25"``.
 
 ``java_generate`` creates pages in ``docs/api/``. ``java_visibility = "public"``
@@ -112,4 +108,5 @@ outside ``docs/api/``: the extension owns that directory and refuses to overwrit
 edited or unowned pages.
 
 You now have the reference. Continue with :doc:`guide` to help a reader choose
-an API and complete a task.
+an API and complete a task. When the local build works, :doc:`build-integration`
+shows how to publish it from CI.

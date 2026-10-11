@@ -121,6 +121,65 @@ pass source directories separately. No Gradle wrapper or automatic distribution
 download is bundled here. Neither Maven nor Gradle was installed in the validation
 environment; these integration recipes remain unexecuted.
 
+Publish the site from CI
+------------------------
+
+This GitHub Actions workflow builds strictly on every push to ``main`` and
+deploys to GitHub Pages. In the repository settings, set **Pages → Source** to
+**GitHub Actions**. Save it as ``.github/workflows/docs.yml``:
+
+.. code-block:: yaml
+
+   name: Documentation
+   on:
+     push:
+       branches: [main]
+
+   permissions:
+     contents: read
+
+   jobs:
+     build:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v7
+           with:
+             persist-credentials: false
+         - uses: actions/setup-java@v6
+           with:
+             distribution: temurin
+             java-version: "25"
+         - uses: actions/setup-python@v7
+           with:
+             python-version: "3.12"
+         - run: python -m pip install "git+https://github.com/r4sky0/sphinx-java-autodoc.git"
+         # Prepare java_classpath inputs and generated sources here, for example
+         # with the Maven or Gradle commands below.
+         - run: sphinx-build -W --keep-going -n docs docs/_build/html
+         - uses: actions/upload-pages-artifact@v5
+           with:
+             path: docs/_build/html
+
+     deploy:
+       needs: build
+       runs-on: ubuntu-latest
+       permissions:
+         pages: write
+         id-token: write
+       environment:
+         name: github-pages
+         url: ${{ steps.deployment.outputs.page_url }}
+       steps:
+         - id: deployment
+           uses: actions/deploy-pages@v5
+
+Each run starts from a clean output directory, so removed types do not leave old
+pages behind. Install the extension from your own lockfile or requirements file
+if you have one, and pin actions to commit SHAs if your project does. This
+repository publishes its own site with the same JDK setup, strict build and
+Pages actions; this standalone workflow has been checked with ``actionlint``
+but has not run in another repository.
+
 Caching and parallelism
 -----------------------
 

@@ -91,5 +91,8 @@ Rebuild with ``sphinx-build -W --keep-going -n docs docs/_build/html`` and follo
 the links from your guide to the API. Guides and API pages share navigation,
 search and the site's theme.
 
+To link to JDK or dependency Javadoc, or to another Sphinx project's Java API,
+configure :ref:`external Javadoc and intersphinx <external-javadoc>`.
+
 For your next guide, choose another question your users ask. For dependencies,
-generated sources and CI, continue with :doc:`build-integration`.
+generated sources and publishing from CI, continue with :doc:`build-integration`.
