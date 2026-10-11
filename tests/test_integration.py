@@ -128,6 +128,8 @@ def test_semantic_extraction(model):
 def test_html_links_structure_inventory_search(site):
     docs, out = site
     html = (out / "api/type-demo.Widget.html").read_text()
+    assert "java-autodoc.css" in html
+    assert (out / "_static/java-autodoc.css").is_file()
     for symbol in ("demo.Widget#convert(int)", "demo.Widget#convert(java.lang.String)"):
         assert f'id="{anchor(symbol)}"' in html
     assert anchor("demo.Widget#convert(int)") != anchor(

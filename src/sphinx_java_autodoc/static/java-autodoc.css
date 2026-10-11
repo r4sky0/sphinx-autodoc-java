@@ -1,0 +1,5 @@
+/* Sphinx's nowrap tokens can exceed the viewport for qualified Java signatures. */
+dl.java .pre {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}

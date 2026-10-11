@@ -35,22 +35,31 @@ def main():
                 for width in (1440, 390):
                     page = browser.new_page(viewport={"width": width, "height": 1000})
                     base = f"http://127.0.0.1:{server.server_port}/{folder}"
+                    page.goto(base + "/index.html")
+                    theme_width = page.evaluate("document.documentElement.scrollWidth")
                     page.goto(base + "/api/type-demo.Widget.html")
                     assert page.locator("dl.java").count() >= 8
                     assert page.get_by_text("Constructors", exact=True).count() == 1
                     assert page.locator("pre").count() > 0
                     assert page.locator("ul li ol li").count() == 2
                     assert page.locator('a[href^="#java-"]').count() > 0
-                    overflow = page.evaluate(
-                        "document.documentElement.scrollWidth > window.innerWidth + 1"
-                    )
+                    api_width = page.evaluate("document.documentElement.scrollWidth")
                     page.screenshot(
                         path=str(output / f"{theme}-{width}.png"), full_page=True
                     )
                     report.append(
-                        {"theme": theme, "width": width, "page_overflow": overflow}
+                        {
+                            "theme": theme,
+                            "width": width,
+                            "theme_page_width": theme_width,
+                            "api_page_width": api_width,
+                            "page_overflow": api_width > width + 1,
+                        }
                     )
-                    assert not overflow, f"Page overflow: {theme} at {width}px"
+                    # Classic has a fixed sidebar/minimum width even without Java content.
+                    assert api_width <= max(width, theme_width) + 1, (
+                        f"Java content adds page overflow: {theme} at {width}px"
+                    )
                     page.goto(base + "/index.html")
                     page.locator('a[href="guide.html"]').first.click()
                     assert page.url.endswith("/guide.html")
