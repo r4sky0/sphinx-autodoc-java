@@ -22,6 +22,12 @@ import java.util.Map;
  *     String value = widget.convert(7);
  *     System.out.println(value);
  * }
+ * <table class="striped">
+ * <caption>Conversion examples</caption>
+ * <tr><th>Call</th><th>Result</th><th>Notes</th></tr>
+ * <tr><td>{@code widget.convert(42)}</td><td>{@code "42"}</td>
+ * <td>Labelled {@value #LABEL}; wide_cells_scroll_inside_the_table_instead_of_the_page</td></tr>
+ * </table>
  * @see Point
  * @since 1.0
  */

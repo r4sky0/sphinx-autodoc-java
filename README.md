@@ -120,7 +120,8 @@ sources before building documentation. The extension does not invoke Maven or Gr
 ## Current limits and further reading
 
 - JPMS `module-info.java` inputs and Lombok-like compiler transformations are unsupported.
-- Plain inline `{@snippet}` bodies render as native code blocks with optional `lang`.
+- Plain inline `{@snippet}` bodies render as native code blocks with optional `lang`;
+  HTML tables render as native tables and `{@value}` shows constant values.
   External/hybrid snippets, regions, IDs and markup actions remain unsupported.
 - Markdown Javadoc comments (`///`) and unsupported tags or HTML
   produce warnings; full standard Javadoc rendering is not implemented.

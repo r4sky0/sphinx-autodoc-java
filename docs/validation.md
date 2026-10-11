@@ -66,7 +66,7 @@ these local checks reused the existing validation environments.
   superclass/interface precedence and explicit ancestor selection.
 - Missing ancestor source documentation, malformed comments, unresolved Java links,
   unsupported snippet/Markdown diagnostics and strict CLI output preservation.
-- Native HTML lists/emphasis/code, literal escaping, safe external URLs, internal
+- Native HTML lists/tables/emphasis/code, `{@value}` constants, literal escaping, safe external URLs, internal
   overload anchors, external JDK links, and external nested-type paths.
 - Constructor/generic/array/varargs fragments checked against **actual standard
   Javadoc output**, not hand-written expected anchors.
@@ -114,9 +114,10 @@ published artifact and is not expected to be deterministic.
 - Traditional comments and plain inline snippets (optional `lang`) are supported;
   Markdown, external/hybrid snippets, snippet regions/IDs/markup and unsupported
   tags warn. Inline snippet text and indentation are compared with the standard
-  JDK doclet and rendered through HTML and text builders. The HTML
-  subset excludes tables, definition lists, headings, images, attributes other than
-  absolute link `href`, and local documentation assets. No raw HTML is emitted.
+  JDK doclet and rendered through HTML and text builders. `{@value}` output and
+  table cell text are also compared with the standard doclet. The HTML subset excludes
+  definition lists, headings, images, presentational attributes, `<th>` styling outside
+  table headers, and local documentation assets. No raw HTML is emitted.
 - Declared members are shown. Non-overridden inherited methods stay on ancestor
   pages; no copied inherited-member catalogue. Compiler-generated record/enum methods
   are listed but standard-doclet-generated prose is not synthesized.
