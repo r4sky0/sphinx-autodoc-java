@@ -60,13 +60,12 @@ One-time PyPI setup must be completed by the PyPI account owner. Register a
 | --- | --- |
 | PyPI project name | `sphinx-java-autodoc` |
 | GitHub owner | `r4sky0` |
-| Repository | `sphinx-autodoc-java` |
+| Repository | `sphinx-java-autodoc` |
 | Workflow filename | `release.yml` |
 | Environment | `pypi` |
 
-The Python distribution retains its existing name, `sphinx-java-autodoc`; the
-GitHub repository is named `sphinx-autodoc-java`. If the project already exists on
-PyPI, add the publisher in that project's Publishing settings instead. No PyPI
+The GitHub repository and the Python distribution share the name
+`sphinx-java-autodoc`. If the project already exists on PyPI, add the publisher in that project's Publishing settings instead. No PyPI
 API token or repository deploy key is needed. See the
 [PyPI trusted publisher documentation](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
 

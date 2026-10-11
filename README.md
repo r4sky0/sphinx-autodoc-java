@@ -1,7 +1,7 @@
 # sphinx-java-autodoc
 
-[![CI](https://github.com/r4sky0/sphinx-autodoc-java/actions/workflows/ci.yml/badge.svg)](https://github.com/r4sky0/sphinx-autodoc-java/actions/workflows/ci.yml)
-[Documentation](https://r4sky0.github.io/sphinx-autodoc-java/)
+[![CI](https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml/badge.svg)](https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml)
+[Documentation](https://r4sky0.github.io/sphinx-java-autodoc/)
 
 Bring Java API documentation and handwritten guides into one Sphinx site.
 `sphinx-java-autodoc` reads Java sources and Javadoc comments with the JDK compiler
@@ -44,13 +44,13 @@ Sphinx dependency.
 From your documentation or Java project's root, install from GitHub:
 
 ```sh
-uv add "sphinx-java-autodoc @ git+https://github.com/r4sky0/sphinx-autodoc-java.git"
+uv add "sphinx-java-autodoc @ git+https://github.com/r4sky0/sphinx-java-autodoc.git"
 ```
 
 With an existing virtual environment:
 
 ```sh
-uv pip install "git+https://github.com/r4sky0/sphinx-autodoc-java.git"
+uv pip install "git+https://github.com/r4sky0/sphinx-java-autodoc.git"
 ```
 
 ## Quick start

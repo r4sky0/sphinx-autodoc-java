@@ -40,10 +40,10 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://r4sky0.github.io/sphinx-autodoc-java/"
-Repository = "https://github.com/r4sky0/sphinx-autodoc-java"
-Issues = "https://github.com/r4sky0/sphinx-autodoc-java/issues"
-Changelog = "https://github.com/r4sky0/sphinx-autodoc-java/releases"
+Documentation = "https://r4sky0.github.io/sphinx-java-autodoc/"
+Repository = "https://github.com/r4sky0/sphinx-java-autodoc"
+Issues = "https://github.com/r4sky0/sphinx-java-autodoc/issues"
+Changelog = "https://github.com/r4sky0/sphinx-java-autodoc/releases"
 
 [project.scripts]
 sphinx-java-autodoc = "sphinx_java_autodoc.__main__:main"

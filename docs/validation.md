@@ -25,11 +25,11 @@ on Python 3.12 to avoid another project's Python-3.14-only Playwright/greenlet b
 The extension itself has no Python native dependency.
 
 Subsequent GitHub Actions runs installed the locked dependencies in clean
-environments. The [initial CI run](https://github.com/r4sky0/sphinx-autodoc-java/actions/runs/38119604674)
+environments. The [initial CI run](https://github.com/r4sky0/sphinx-java-autodoc/actions/runs/38119604674)
 passed the complete OS/Python matrix, packaging, strict documentation builds,
 lint/compiler checks and dependency audit. Its browser check exposed mobile
 signature overflow, fixed by the extension's scoped wrapping stylesheet. The
-[follow-up Chromium job](https://github.com/r4sky0/sphinx-autodoc-java/actions/runs/38119914438/job/114412446678)
+[follow-up Chromium job](https://github.com/r4sky0/sphinx-java-autodoc/actions/runs/38119914438/job/114412446678)
 passed structure, navigation, live search and API-width checks in both themes at
 desktop/mobile widths; screenshots are available in that run's artifacts.
 The README's GitHub installation and Sphinx configuration were also reproduced
