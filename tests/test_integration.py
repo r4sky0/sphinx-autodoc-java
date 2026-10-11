@@ -735,6 +735,26 @@ def test_line_breaks_preserve_inline_formatting_and_preformatted_text():
     assert next(result.findall(nodes.literal_block)).astext() == "Code\ncontinued"
 
 
+def test_paragraph_boundaries_and_spaces_between_tokens():
+    from docutils import nodes
+
+    from sphinx_java_autodoc.render import comment
+
+    part = ET.fromstring("""<part>
+      <text> </text><code>public</code><text> </text>
+      <link target="java.lang.reflect.Field" role="type"><text>Field</text></link>
+      <start name="p"/><text>Closed</text><end name="p"/><text> after </text>
+      <start name="h2"/><text>Heading</text><end name="h2"/><text>Text</text>
+      <start name="ul"/><start name="li"/><code>a</code><text> </text><code>b</code>
+      <end name="li"/><end name="ul"/>
+    </part>""")
+    result = nodes.container("", *comment(part, None))
+    paragraphs = [p.astext().strip() for p in result.children[:4]]
+    assert paragraphs == ["public Field", "Closed", "after", "Heading"]
+    assert result.children[4].astext() == "Text"
+    assert next(result.findall(nodes.list_item)).astext() == "a b"
+
+
 def test_xml_invalid_characters_are_preserved_as_unicode_escapes(tmp_path):
     # javac translates \u0000 even inside comments; XML 1.0 cannot carry it.
     source = tmp_path / "Controls.java"

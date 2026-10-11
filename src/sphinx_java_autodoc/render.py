@@ -20,6 +20,12 @@ ATTRIBUTES = {
     "th": {"colspan", "rowspan", "scope"},
     "td": {"colspan", "rowspan", "scope"},
 }
+# Unsupported block elements still end the current paragraph.
+BLOCK_LEVEL = {
+    *(f"h{level}" for level in range(1, 7)),
+    *("address", "article", "aside", "center", "dd", "div", "dl", "dt", "figcaption"),
+    *("figure", "footer", "header", "hr", "main", "nav", "section"),
+}
 # HTML limits for cell spans.
 SPAN_LIMITS = {"colspan": 1000, "rowspan": 65534}
 
@@ -48,6 +54,8 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
     supported = block_tags | TABLE_TAGS | {"code", "b", "strong", "i", "em", "a", "br"}
     head_rows: set[int] = set()
     header_cells: set[int] = set()
+    # Paragraphs from <p> or ended by a block element take no further inline content.
+    sealed: set[int] = set()
 
     def warn(message):
         LOGGER.warning(message, location=location, type="java", subtype="html")
@@ -57,6 +65,12 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
             if stack[i][0] == tag:
                 del stack[i:]
                 return
+
+    def break_paragraph():
+        close("p")
+        current = stack[-1][1]
+        if current.children and isinstance(current.children[-1], nodes.paragraph):
+            sealed.add(id(current.children[-1]))
 
     def unwind(tags):
         """Closes elements above the innermost open tag in ``tags`` and returns it."""
@@ -179,11 +193,11 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
         if isinstance(
             current, (nodes.container, nodes.list_item, nodes.block_quote, nodes.entry)
         ):
-            if isinstance(node, nodes.Text) and not node.astext().strip():
-                return
-            if not current.children or not isinstance(
-                current.children[-1], nodes.paragraph
-            ):
+            last = current.children[-1] if current.children else None
+            if not isinstance(last, nodes.paragraph) or id(last) in sealed:
+                # Whitespace between blocks does not start a paragraph.
+                if isinstance(node, nodes.Text) and not node.astext().strip():
+                    return
                 current += nodes.paragraph()
             current.children[-1] += node
         elif isinstance(current, (nodes.bullet_list, nodes.enumerated_list)):
@@ -220,6 +234,8 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                     warn(
                         f"Unsupported Javadoc HTML <{name}>; use paragraphs, lists, tables, emphasis, links or <pre>."
                     )
+                    if name in BLOCK_LEVEL:
+                        break_paragraph()
                     continue
                 if any(k not in ATTRIBUTES.get(name, {"href"}) for k in attrs):
                     warn(
@@ -259,6 +275,7 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                                 break
                     if name == "p":
                         node = nodes.paragraph()
+                        sealed.add(id(node))
                     elif name == "ul":
                         node = nodes.bullet_list()
                     elif name == "ol":
@@ -297,7 +314,10 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                 if token.get("closed") != "true":
                     stack.append((name, node))
             elif tag == "end":
-                close(token.get("name", "").lower())
+                name = token.get("name", "").lower()
+                if name in BLOCK_LEVEL:
+                    break_paragraph()
+                close(name)
             else:
                 warn(f"Unsupported XML comment token {tag}; regenerate the model.")
 
