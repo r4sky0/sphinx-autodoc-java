@@ -5,7 +5,8 @@
    the included CI matrix on Linux. These are release qualification gaps, not
    additional backends. Keep JDK 25 / Sphinx 9.1 as the narrow baseline until wider
    runtime versions are actually tested.
-2. **Extend Javadoc fidelity:** structured Markdown and snippet support; record
+2. **Extend Javadoc fidelity:** structured Markdown, external snippets and snippet
+   regions/markup (plain inline snippets are supported); record
    accessor/canonical-constructor documentation synthesis; better support for tables, definition
    lists, headings and local documentation assets. Retain actionable diagnostics
    until each behavior has fixtures.

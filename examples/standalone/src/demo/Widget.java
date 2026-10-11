@@ -17,6 +17,11 @@ import java.util.Map;
  * }}</pre>
  * <p>First line<br><em>Second line<br>Third line</em><br>Last line.</p>
  * <p>Try <a href="https://example.test/?a=1&amp;b=2">query parameters</a>.</p>
+ * <p>An inline snippet:</p>
+ * {@snippet :
+ *     String value = widget.convert(7);
+ *     System.out.println(value);
+ * }
  * @see Point
  * @since 1.0
  */

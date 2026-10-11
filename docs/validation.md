@@ -111,7 +111,10 @@ published artifact and is not expected to be deterministic.
 
 ## Known first-release limits
 
-- Traditional comments only; Markdown/snippets and unsupported tags warn. The HTML
+- Traditional comments and plain inline snippets (optional `lang`) are supported;
+  Markdown, external/hybrid snippets, snippet regions/IDs/markup and unsupported
+  tags warn. Inline snippet text and indentation are compared with the standard
+  JDK doclet and rendered through HTML and text builders. The HTML
   subset excludes tables, definition lists, headings, images, attributes other than
   absolute link `href`, and local documentation assets. No raw HTML is emitted.
 - Declared members are shown. Non-overridden inherited methods stay on ancestor

@@ -272,7 +272,7 @@ def test_dependency_classpath_and_invalidation(tmp_path):
 def test_diagnostics_and_strict_cli(tmp_path):
     source = tmp_path / "Bad.java"
     source.write_text("""package bad;
-/** Missing {@link DoesNotExist}; {@snippet :
+/** Missing {@link DoesNotExist}; {@snippet file="missing.java" :
  * int x = 1;
  * } */
 public class Bad {
@@ -281,7 +281,7 @@ public class Bad {
     path, _ = extract([source], [], tmp_path / "cache")
     messages = "\n".join(n.text for n in read_model(path).findall("diagnostic"))
     assert "Unresolved Javadoc reference DoesNotExist" in messages
-    assert "Unsupported Javadoc construct SNIPPET" in messages
+    assert "Unsupported snippet" in messages
     assert "Cannot resolve inheritDoc" in messages
     output = tmp_path / "strict.xml"
     output.write_text("previous good model")
