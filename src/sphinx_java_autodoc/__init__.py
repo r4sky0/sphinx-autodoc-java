@@ -219,6 +219,7 @@ def setup(app):
         "java_generate": "",
         "java_visibility": "protected",
         "java_external_javadoc": {},
+        "java_maximum_signature_line_length": None,
     }.items():
         app.add_config_value(name, default, "env")
     app.add_domain(JavaDomain)

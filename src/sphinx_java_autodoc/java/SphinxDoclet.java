@@ -353,6 +353,239 @@ public final class SphinxDoclet implements Doclet {
     return variable.asType() + " " + variable.getSimpleName() + constant;
   }
 
+  // Structured signatures: the same declaration as tokens, so renderers can link types and
+  // build native signature nodes. Tags: k keyword, kt primitive type, t punctuation or space,
+  // q qualifier, n declared name, tv type variable, pname parameter name, r type reference,
+  // v constant value, params/param a parameter list.
+
+  private void sig(Xml parent, Element e) {
+    var sig = parent.add("sig");
+    for (var annotation : e.getAnnotationMirrors()) {
+      annotation(sig, annotation);
+      sig.addText("t", " ");
+    }
+    for (var modifier : e.getModifiers()) {
+      sig.addText("k", modifier.toString());
+      sig.addText("t", " ");
+    }
+    switch (e) {
+      case TypeElement type -> typeSig(sig, type);
+      case ExecutableElement method -> methodSig(sig, method);
+      case VariableElement variable -> {
+        typeTokens(sig, variable.asType());
+        sig.addText("t", " ");
+        sig.addText("n", variable.getSimpleName().toString());
+        var value = variable.getConstantValue();
+        if (value != null) {
+          sig.addText("t", " = ");
+          sig.addText("v", elements.getConstantExpression(value));
+        }
+      }
+      default -> throw new IllegalArgumentException("Unexpected declaration " + e);
+    }
+  }
+
+  private void typeSig(Xml sig, TypeElement type) {
+    var kind = type.getKind();
+    sig.addText(
+        "k",
+        kind == ElementKind.ANNOTATION_TYPE ? "@interface" : kind.name().toLowerCase(Locale.ROOT));
+    sig.addText("t", " ");
+    String pkg = elements.getPackageOf(type).getQualifiedName().toString();
+    String name = type.getQualifiedName().toString();
+    if (!pkg.isEmpty()) {
+      sig.addText("q", pkg + ".");
+      name = name.substring(pkg.length() + 1);
+    }
+    sig.addText("n", name);
+    typeParameterTokens(sig, type.getTypeParameters());
+    if (kind == ElementKind.RECORD) {
+      var params = sig.add("params");
+      for (var component : type.getRecordComponents()) {
+        var param = params.add("param");
+        for (var annotation : component.getAnnotationMirrors()) {
+          annotation(param, annotation);
+          param.addText("t", " ");
+        }
+        typeTokens(param, component.asType());
+        param.addText("t", " ");
+        param.addText("pname", component.getSimpleName().toString());
+      }
+    }
+    var superclass = type.getSuperclass();
+    if (kind == ElementKind.CLASS
+        && superclass.getKind() != TypeKind.NONE
+        && !superclass.toString().equals("java.lang.Object")) {
+      clause(sig, "extends", List.of(superclass));
+    }
+    clause(sig, kind.isInterface() ? "extends" : "implements", type.getInterfaces());
+    clause(sig, "permits", type.getPermittedSubclasses());
+  }
+
+  private void methodSig(Xml sig, ExecutableElement method) {
+    if (!method.getTypeParameters().isEmpty()) {
+      typeParameterTokens(sig, method.getTypeParameters());
+      sig.addText("t", " ");
+    }
+    if (method.getKind() == ElementKind.CONSTRUCTOR) {
+      sig.addText("n", method.getEnclosingElement().getSimpleName().toString());
+    } else {
+      typeTokens(sig, method.getReturnType());
+      sig.addText("t", " ");
+      sig.addText("n", method.getSimpleName().toString());
+    }
+    var params = sig.add("params");
+    var parameters = method.getParameters();
+    for (int i = 0; i < parameters.size(); i++) {
+      var parameter = parameters.get(i);
+      var param = params.add("param");
+      for (var annotation : parameter.getAnnotationMirrors()) {
+        annotation(param, annotation);
+        param.addText("t", " ");
+      }
+      if (method.isVarArgs()
+          && i == parameters.size() - 1
+          && parameter.asType() instanceof ArrayType array) {
+        typeTokens(param, array.getComponentType());
+        param.addText("t", "...");
+      } else {
+        typeTokens(param, parameter.asType());
+      }
+      param.addText("t", " ");
+      param.addText("pname", parameter.getSimpleName().toString());
+    }
+    clause(sig, "throws", method.getThrownTypes());
+    if (method.getDefaultValue() != null) {
+      sig.addText("t", " ");
+      sig.addText("k", "default");
+      sig.addText("t", " ");
+      sig.addText("v", method.getDefaultValue().toString());
+    }
+  }
+
+  private void clause(Xml sig, String keyword, List<? extends TypeMirror> types) {
+    if (types.isEmpty()) {
+      return;
+    }
+    sig.addText("t", " ");
+    sig.addText("k", keyword);
+    sig.addText("t", " ");
+    for (int i = 0; i < types.size(); i++) {
+      if (i > 0) {
+        sig.addText("t", ", ");
+      }
+      typeTokens(sig, types.get(i));
+    }
+  }
+
+  private void typeParameterTokens(Xml sig, List<? extends TypeParameterElement> parameters) {
+    if (parameters.isEmpty()) {
+      return;
+    }
+    sig.addText("t", "<");
+    for (int i = 0; i < parameters.size(); i++) {
+      if (i > 0) {
+        sig.addText("t", ", ");
+      }
+      var parameter = parameters.get(i);
+      sig.addText("tv", parameter.getSimpleName().toString());
+      var bounds = parameter.getBounds();
+      if (bounds.size() == 1 && bounds.getFirst().toString().equals("java.lang.Object")) {
+        continue;
+      }
+      sig.addText("t", " ");
+      sig.addText("k", "extends");
+      sig.addText("t", " ");
+      for (int b = 0; b < bounds.size(); b++) {
+        if (b > 0) {
+          sig.addText("t", " & ");
+        }
+        typeTokens(sig, bounds.get(b));
+      }
+    }
+    sig.addText("t", ">");
+  }
+
+  private void typeTokens(Xml sig, TypeMirror type) {
+    for (var annotation : type.getAnnotationMirrors()) {
+      annotation(sig, annotation);
+      sig.addText("t", " ");
+    }
+    switch (type) {
+      case ArrayType array -> {
+        typeTokens(sig, array.getComponentType());
+        sig.addText("t", "[]");
+      }
+      case DeclaredType declared -> {
+        typeReference(sig, (TypeElement) declared.asElement());
+        var arguments = declared.getTypeArguments();
+        if (!arguments.isEmpty()) {
+          sig.addText("t", "<");
+          for (int i = 0; i < arguments.size(); i++) {
+            if (i > 0) {
+              sig.addText("t", ", ");
+            }
+            typeTokens(sig, arguments.get(i));
+          }
+          sig.addText("t", ">");
+        }
+      }
+      case WildcardType wildcard -> {
+        sig.addText("t", "?");
+        if (wildcard.getExtendsBound() != null) {
+          clause(sig, "extends", List.of(wildcard.getExtendsBound()));
+        } else if (wildcard.getSuperBound() != null) {
+          clause(sig, "super", List.of(wildcard.getSuperBound()));
+        }
+      }
+      case TypeVariable variable ->
+          sig.addText("tv", variable.asElement().getSimpleName().toString());
+      case IntersectionType intersection -> {
+        var bounds = intersection.getBounds();
+        for (int i = 0; i < bounds.size(); i++) {
+          if (i > 0) {
+            sig.addText("t", " & ");
+          }
+          typeTokens(sig, bounds.get(i));
+        }
+      }
+      default ->
+          sig.addText(
+              "kt",
+              type.getKind().isPrimitive() || type.getKind() == TypeKind.VOID
+                  ? type.getKind().name().toLowerCase(Locale.ROOT)
+                  : type.toString());
+    }
+  }
+
+  /** A link to a type: its compiler ID, external Javadoc location and nested simple name. */
+  private void typeReference(Xml sig, TypeElement type) {
+    String pkg = elements.getPackageOf(type).getQualifiedName().toString();
+    String name = type.getQualifiedName().toString();
+    var reference = sig.add("r").set("target", id(type));
+    javadocLocation(reference, type);
+    reference
+        .node()
+        .setTextContent(Xml.safe(pkg.isEmpty() ? name : name.substring(pkg.length() + 1)));
+  }
+
+  private void annotation(Xml sig, AnnotationMirror annotation) {
+    sig.addText("t", "@");
+    typeReference(sig, (TypeElement) annotation.getAnnotationType().asElement());
+    var values = annotation.getElementValues();
+    if (values.isEmpty()) {
+      return;
+    }
+    String arguments =
+        values.size() == 1
+                && values.keySet().iterator().next().getSimpleName().contentEquals("value")
+            ? values.values().iterator().next().toString()
+            : values.entrySet().stream()
+                .map(v -> v.getKey().getSimpleName() + "=" + v.getValue())
+                .collect(Collectors.joining(", "));
+    sig.addText("t", "(" + arguments + ")");
+  }
+
   private Xml declaration(Xml parent, String tag, Element e) {
     var node =
         parent
@@ -363,6 +596,7 @@ public final class SphinxDoclet implements Doclet {
             .set("visibility", visible(e, true) ? "public" : "protected")
             .set("package", elements.getPackageOf(e).getQualifiedName().toString())
             .set("signature", signature(e));
+    sig(node, e);
     documentation(node, e);
     return node;
   }

@@ -16,6 +16,15 @@ not a general XML document interchange service. No external entities are fetched
 - `member`: same attributes. Kinds include `constructor`, `method`, `field`,
   `enum_constant`, `record_component`. Types include `class`, `interface`, `enum`, `record`,
   `annotation_type`.
+- `sig` (optional child of `type` and `member`): the declaration as signature tokens,
+  so renderers can link types and build native signature nodes. Tags: `k` keyword
+  or modifier, `kt` primitive type or `void`, `t` punctuation or spaces, `q` package
+  qualifier, `n` declared name, `tv` type variable, `pname` parameter name, `v` constant
+  or default value, `r` type reference, and `params` containing one `param` per
+  parameter or record component. `r` carries `target` (canonical ID) and the external
+  Javadoc `path`, `module` and `fragment`; its text is the nested simple name.
+  Renderers without `sig` support use `signature`, which remains required, so schema
+  1 still applies.
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
   `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.
