@@ -10,12 +10,20 @@ not a general XML document interchange service. No external entities are fetched
 
 - `package`: `name`, followed by `doc`.
 - `type`: required `id`, `name`, `kind`, `package`, `signature`, `visibility`;
-  contains `doc` then zero or more `member` elements.
+  contains an optional `signature`, then `doc` and zero or more `member` elements.
   Visibility includes enclosing declarations: a public nested type inside a
   protected type has `visibility="protected"`; its signature retains `public`.
 - `member`: same attributes. Kinds include `constructor`, `method`, `field`,
   `enum_constant`, `record_component`. Types include `class`, `interface`, `enum`, `record`,
   `annotation_type`.
+- Optional `signature`: ordered `text`, `name` (the declared name), and `link`
+  tokens. Links reference compiler-resolved types, with the same external location
+  metadata as comment links and `text` label children. Type arguments, bounds,
+  arrays, varargs, nested types and throws clauses are emitted from compiler types.
+  Annotations and annotation values remain display text. The required `signature`
+  attribute remains the complete display fallback. This is an additive schema 1
+  extension: old consumers ignore the optional element; new consumers still render
+  old models using the attribute. No canonical IDs or inventory names change.
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
   `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.

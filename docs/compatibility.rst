@@ -70,9 +70,10 @@ Known limits
 * Only declared members are shown. Non-overridden inherited methods stay on their
   ancestor's page. Compiler-generated record and enum methods are listed, but the
   standard doclet's generated prose for them is not synthesized.
-* Signatures are display text rather than individually clickable type tokens.
-  Links in comments and explicit Java roles are native references. Manual Java
-  declaration directives are not provided.
+* Signature types link to available local, external Javadoc or intersphinx targets.
+  Types without documentation remain plain text; explicit roles and comment links
+  still report unresolved targets. Older models use their display-text signature.
+  Annotation names/values are plain text. Manual Java directives are not provided.
 * External links use the Javadoc 9+ URL structure; Javadoc 8 member anchors are not
   supported. Roles mapped to external Javadoc without compiler metadata cannot
   check that the symbol exists.

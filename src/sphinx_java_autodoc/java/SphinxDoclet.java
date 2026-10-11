@@ -222,10 +222,6 @@ public final class SphinxDoclet implements Doclet {
     warnings.add(id(owner) + ": " + (args.length == 0 ? template : template.formatted(args)));
   }
 
-  private static String join(Collection<?> values) {
-    return values.stream().map(Object::toString).collect(Collectors.joining(", "));
-  }
-
   // Declarations and signatures
 
   private String id(Element e) {
@@ -255,102 +251,179 @@ public final class SphinxDoclet implements Doclet {
     };
   }
 
-  private static String typeParameters(List<? extends TypeParameterElement> parameters) {
-    if (parameters.isEmpty()) {
-      return "";
-    }
-    return parameters.stream()
-        .map(SphinxDoclet::typeParameter)
-        .collect(Collectors.joining(", ", "<", ">"));
-  }
+  /** Builds display text and reference tokens from the same compiler types. */
+  private final class Signature {
+    final Xml xml;
+    final StringBuilder text = new StringBuilder();
 
-  private static String typeParameter(TypeParameterElement parameter) {
-    var bounds = parameter.getBounds();
-    if (bounds.size() == 1 && bounds.getFirst().toString().equals("java.lang.Object")) {
-      return parameter.getSimpleName().toString();
+    Signature(Xml xml) {
+      this.xml = xml;
     }
-    return parameter.getSimpleName()
-        + " extends "
-        + bounds.stream().map(Object::toString).collect(Collectors.joining(" & "));
+
+    Signature append(Object value) {
+      String spelling = value.toString();
+      text.append(spelling);
+      xml.addText("text", spelling);
+      return this;
+    }
+
+    Signature name(Object value) {
+      text.append(value);
+      xml.addText("name", value.toString());
+      return this;
+    }
+
+    Signature append(TypeMirror type) {
+      return type(type, false);
+    }
+
+    Signature type(TypeMirror type, boolean varargs) {
+      if (type instanceof ArrayType) {
+        var dimensions = new ArrayList<ArrayType>();
+        while (type instanceof ArrayType array) {
+          dimensions.add(array);
+          type = array.getComponentType();
+        }
+        append(type);
+        for (int i = 0; i < dimensions.size(); i++) {
+          var annotations = dimensions.get(i).getAnnotationMirrors();
+          if (!annotations.isEmpty()) {
+            append(" ");
+            annotations.forEach(a -> append(a + " "));
+          }
+          append(varargs && i == dimensions.size() - 1 ? "..." : "[]");
+        }
+        return this;
+      }
+      type.getAnnotationMirrors().forEach(a -> append(a + " "));
+      switch (type) {
+        case DeclaredType declared -> {
+          var target = (TypeElement) declared.asElement();
+          String label = target.getQualifiedName().toString();
+          if (declared.getEnclosingType() instanceof DeclaredType enclosing) {
+            append(enclosing).append(".");
+            label = target.getSimpleName().toString();
+          }
+          var link =
+              xml.add("link").set("target", id(target)).set("role", "type").set("plain", "true");
+          javadocLocation(link, target);
+          link.addText("text", label);
+          text.append(label);
+          if (!declared.getTypeArguments().isEmpty()) {
+            append("<").types(declared.getTypeArguments(), ", ").append(">");
+          }
+        }
+        case TypeVariable variable -> append(variable.asElement().getSimpleName());
+        case WildcardType wildcard -> {
+          append("?");
+          if (wildcard.getExtendsBound() != null) {
+            append(" extends ").append(wildcard.getExtendsBound());
+          }
+          if (wildcard.getSuperBound() != null) {
+            append(" super ").append(wildcard.getSuperBound());
+          }
+        }
+        default -> append(type.getKind().name().toLowerCase(Locale.ROOT));
+      }
+      return this;
+    }
+
+    Signature types(List<? extends TypeMirror> values, String separator) {
+      for (int i = 0; i < values.size(); i++) {
+        if (i > 0) append(separator);
+        append(values.get(i));
+      }
+      return this;
+    }
+
+    Signature parameters(List<? extends TypeParameterElement> parameters) {
+      if (parameters.isEmpty()) return this;
+      append("<");
+      for (int i = 0; i < parameters.size(); i++) {
+        if (i > 0) append(", ");
+        var parameter = parameters.get(i);
+        append(parameter.getSimpleName());
+        var bounds = parameter.getBounds();
+        if (!(bounds.size() == 1 && bounds.getFirst().toString().equals("java.lang.Object"))) {
+          append(" extends ").types(bounds, " & ");
+        }
+      }
+      return append(">");
+    }
   }
 
   private static String annotations(Element e) {
     return e.getAnnotationMirrors().stream().map(a -> a + " ").collect(Collectors.joining());
   }
 
-  private String signature(Element e) {
-    String modifiers = e.getModifiers().stream().map(m -> m + " ").collect(Collectors.joining());
-    String prefix = annotations(e) + modifiers;
-    return switch (e) {
-      case TypeElement type -> prefix + typeSignature(type);
-      case ExecutableElement method -> prefix + methodSignature(method);
-      case VariableElement variable -> prefix + variableSignature(variable);
-      default -> throw new IllegalArgumentException("Unexpected declaration " + e);
-    };
-  }
-
-  private static String typeSignature(TypeElement type) {
-    var kind = type.getKind();
-    var s = new StringBuilder();
-    s.append(
-        kind == ElementKind.ANNOTATION_TYPE ? "@interface" : kind.name().toLowerCase(Locale.ROOT));
-    s.append(' ').append(type.getQualifiedName()).append(typeParameters(type.getTypeParameters()));
-    if (kind == ElementKind.RECORD) {
-      s.append(
-          type.getRecordComponents().stream()
-              .map(c -> annotations(c) + c.asType() + " " + c.getSimpleName())
-              .collect(Collectors.joining(", ", "(", ")")));
-    }
-    var superclass = type.getSuperclass();
-    if (kind == ElementKind.CLASS
-        && superclass.getKind() != TypeKind.NONE
-        && !superclass.toString().equals("java.lang.Object")) {
-      s.append(" extends ").append(superclass);
-    }
-    if (!type.getInterfaces().isEmpty()) {
-      s.append(kind.isInterface() ? " extends " : " implements ");
-      s.append(join(type.getInterfaces()));
-    }
-    if (!type.getPermittedSubclasses().isEmpty()) {
-      s.append(" permits ").append(join(type.getPermittedSubclasses()));
-    }
-    return s.toString();
-  }
-
-  private static String methodSignature(ExecutableElement method) {
-    var s = new StringBuilder();
-    if (!method.getTypeParameters().isEmpty()) {
-      s.append(typeParameters(method.getTypeParameters())).append(' ');
-    }
-    if (method.getKind() == ElementKind.CONSTRUCTOR) {
-      s.append(method.getEnclosingElement().getSimpleName());
-    } else {
-      s.append(method.getReturnType()).append(' ').append(method.getSimpleName());
-    }
-    var parameters = method.getParameters();
-    var rendered = new ArrayList<String>();
-    for (int i = 0; i < parameters.size(); i++) {
-      var parameter = parameters.get(i);
-      String type = parameter.asType().toString();
-      if (method.isVarArgs() && i == parameters.size() - 1) {
-        type = type.substring(0, type.length() - 2) + "...";
+  private void signature(Xml node, Element e) {
+    var s = new Signature(node.add("signature"));
+    s.append(annotations(e));
+    e.getModifiers().forEach(m -> s.append(m + " "));
+    switch (e) {
+      case TypeElement type -> {
+        var kind = type.getKind();
+        s.append(
+            kind == ElementKind.ANNOTATION_TYPE
+                ? "@interface"
+                : kind.name().toLowerCase(Locale.ROOT));
+        s.append(" ").name(type.getQualifiedName()).parameters(type.getTypeParameters());
+        if (kind == ElementKind.RECORD) {
+          s.append("(");
+          var components = type.getRecordComponents();
+          for (int i = 0; i < components.size(); i++) {
+            if (i > 0) s.append(", ");
+            var c = components.get(i);
+            s.append(annotations(c)).append(c.asType()).append(" ").append(c.getSimpleName());
+          }
+          s.append(")");
+        }
+        var superclass = type.getSuperclass();
+        if (kind == ElementKind.CLASS
+            && superclass.getKind() != TypeKind.NONE
+            && !superclass.toString().equals("java.lang.Object")) {
+          s.append(" extends ").append(superclass);
+        }
+        if (!type.getInterfaces().isEmpty()) {
+          s.append(kind.isInterface() ? " extends " : " implements ")
+              .types(type.getInterfaces(), ", ");
+        }
+        if (!type.getPermittedSubclasses().isEmpty()) {
+          s.append(" permits ").types(type.getPermittedSubclasses(), ", ");
+        }
       }
-      rendered.add(annotations(parameter) + type + " " + parameter.getSimpleName());
+      case ExecutableElement method -> {
+        if (!method.getTypeParameters().isEmpty())
+          s.parameters(method.getTypeParameters()).append(" ");
+        if (method.getKind() == ElementKind.CONSTRUCTOR) {
+          s.name(method.getEnclosingElement().getSimpleName());
+        } else {
+          s.append(method.getReturnType()).append(" ").name(method.getSimpleName());
+        }
+        s.append("(");
+        var parameters = method.getParameters();
+        for (int i = 0; i < parameters.size(); i++) {
+          if (i > 0) s.append(", ");
+          var parameter = parameters.get(i);
+          s.append(annotations(parameter))
+              .type(parameter.asType(), method.isVarArgs() && i == parameters.size() - 1)
+              .append(" ")
+              .append(parameter.getSimpleName());
+        }
+        s.append(")");
+        if (!method.getThrownTypes().isEmpty())
+          s.append(" throws ").types(method.getThrownTypes(), ", ");
+        if (method.getDefaultValue() != null)
+          s.append(" default ").append(method.getDefaultValue());
+      }
+      case VariableElement variable -> {
+        s.append(variable.asType()).append(" ").name(variable.getSimpleName());
+        if (variable.getConstantValue() != null)
+          s.append(" = ").append(elements.getConstantExpression(variable.getConstantValue()));
+      }
+      default -> throw new IllegalArgumentException("Unexpected declaration " + e);
     }
-    s.append('(').append(String.join(", ", rendered)).append(')');
-    if (!method.getThrownTypes().isEmpty()) {
-      s.append(" throws ").append(join(method.getThrownTypes()));
-    }
-    if (method.getDefaultValue() != null) {
-      s.append(" default ").append(method.getDefaultValue());
-    }
-    return s.toString();
-  }
-
-  private String variableSignature(VariableElement variable) {
-    var value = variable.getConstantValue();
-    String constant = value == null ? "" : " = " + elements.getConstantExpression(value);
-    return variable.asType() + " " + variable.getSimpleName() + constant;
+    node.set("signature", s.text.toString());
   }
 
   private Xml declaration(Xml parent, String tag, Element e) {
@@ -361,8 +434,8 @@ public final class SphinxDoclet implements Doclet {
             .set("name", e.getSimpleName().toString())
             .set("kind", e.getKind().name().toLowerCase(Locale.ROOT))
             .set("visibility", visible(e, true) ? "public" : "protected")
-            .set("package", elements.getPackageOf(e).getQualifiedName().toString())
-            .set("signature", signature(e));
+            .set("package", elements.getPackageOf(e).getQualifiedName().toString());
+    signature(node, e);
     documentation(node, e);
     return node;
   }

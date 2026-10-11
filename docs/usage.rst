@@ -143,6 +143,10 @@ to it. For external members without metadata, use the published Javadoc fragment
 including ``...`` for varargs and declared type variables where applicable. This
 manual fallback cannot infer varargs from erased arrays or verify the symbol exists. Prefer compiler-resolved links.
 
+Signature types use the same local, external and intersphinx resolution. When a
+type has no documentation target, its signature text remains readable without a
+missing-reference warning. Explicit roles and comment links still warn normally.
+
 Every documented object is exported to ``objects.inv``. A second project can load
 it using standard intersphinx:
 

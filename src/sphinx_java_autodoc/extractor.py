@@ -133,6 +133,18 @@ def read_model(path: Path) -> ET.Element:
                     )
                 if not valid:
                     raise ValueError(f"invalid member identity or kind for {symbol!r}")
+        for signature in root.findall("type/signature") + root.findall(
+            "type/member/signature"
+        ):
+            for token in signature:
+                if token.tag not in {"text", "name", "link"}:
+                    raise ValueError(f"invalid signature token {token.tag!r}")
+                if token.tag == "link" and (
+                    token.get("role") != "type"
+                    or not re.fullmatch(qualified, token.get("target", ""))
+                    or any(child.tag != "text" for child in token)
+                ):
+                    raise ValueError("invalid signature type reference")
         return root
     except (OSError, ET.ParseError, ValueError) as exc:
         raise ExtensionError(f"Java autodoc: invalid model {path}: {exc}") from exc

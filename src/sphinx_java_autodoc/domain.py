@@ -12,7 +12,7 @@ from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.nodes import make_refnode
 
-from .render import documentation
+from .render import documentation, reference
 
 LOGGER = logging.getLogger(__name__)
 
@@ -114,7 +114,19 @@ class AutoClass(SphinxDirective):
             "", domain="java", objtype=role, desctype=role, classes=["java", role]
         )
         sig = addnodes.desc_signature("", "", fullname=symbol)
-        sig += addnodes.desc_name("", element.get("signature"))
+        signature = element.find("signature")
+        if signature is None:
+            sig += addnodes.desc_name("", element.get("signature"))
+        else:
+            for token in signature:
+                if token.tag == "link":
+                    ref = reference(token, [nodes.Text(t.text or "") for t in token])
+                    ref["java:signature"] = True
+                    sig += ref
+                elif token.tag == "name":
+                    sig += addnodes.desc_name("", token.text or "")
+                else:
+                    sig += nodes.Text(token.text or "")
         if "no-index" not in self.options:
             target = anchor(symbol)
             sig["ids"].append(target)
@@ -261,3 +273,10 @@ class JavaDomain(Domain):
             env, fromdocname, builder, "obj", target, node, contnode
         )
         return [("java:obj", resolved)] if resolved else []
+
+
+def signature_fallback(app, env, node, contnode):
+    # Automatic type links stay readable when no local, external or intersphinx target exists.
+    if node.get("refdomain") == "java" and node.get("java:signature"):
+        return contnode
+    return None

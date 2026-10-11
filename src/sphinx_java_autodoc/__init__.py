@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from sphinx.errors import ExtensionError
 from sphinx.util import logging
 
-from .domain import JavaDomain
+from .domain import JavaDomain, signature_fallback
 from .extractor import VERSION, atomic_write, extract, read_model
 
 __version__ = VERSION
@@ -193,13 +193,14 @@ def setup(app):
     }.items():
         app.add_config_value(name, default, "env")
     app.add_domain(JavaDomain)
+    app.connect("missing-reference", signature_fallback, priority=900)
     app.add_css_file("java-autodoc.css")
     app.connect("builder-inited", add_static_path)
     app.connect("builder-inited", prepare)
     app.connect("env-get-outdated", outdated)
     return {
         "version": VERSION,
-        "env_version": 2,
+        "env_version": 3,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
