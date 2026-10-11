@@ -1,0 +1,20 @@
+plugins { id 'java' }
+
+sourceSets.main.java.srcDirs = ['../standalone/src']
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-proc:none']
+}
+
+tasks.register('writeJavaAutodocClasspath') {
+    def destination = layout.buildDirectory.file('java-autodoc-classpath.txt')
+    inputs.files(sourceSets.main.compileClasspath)
+    outputs.file(destination)
+    doLast {
+        def file = destination.get().asFile
+        file.parentFile.mkdirs()
+        file.setText(sourceSets.main.compileClasspath.asPath, 'UTF-8')
+    }
+}

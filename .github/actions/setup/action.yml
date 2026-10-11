@@ -1,0 +1,25 @@
+name: Set up uv and JDK
+description: Install the project's Python tooling and compiler toolchain
+inputs:
+  python-version:
+    description: Python version
+    default: "3.12"
+  java:
+    description: Install JDK 25
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      with:
+        version: "0.13.0"
+        python-version: ${{ inputs.python-version }}
+        enable-cache: true
+    - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      if: inputs.java == 'true'
+      with:
+        distribution: temurin
+        java-version: "25"
+    - name: Install locked dependencies
+      shell: bash
+      run: uv sync --locked

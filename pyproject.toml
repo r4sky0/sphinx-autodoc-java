@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sphinx-java-autodoc"
+version = "0.1.0"
+description = "Compiler-backed Java API documentation in native Sphinx nodes"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Ralph Offinger" }]
+keywords = ["sphinx", "java", "javadoc", "documentation", "autodoc"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Sphinx :: Extension",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Java",
+    "Topic :: Documentation :: Sphinx",
+]
+dependencies = ["Sphinx>=9.1,<9.2"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "build>=1", "playwright>=1.50"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.17", "twine>=6", "pip-audit>=2.9", "actionlint-py>=1.7.12.25"]
+
+[project.urls]
+Documentation = "https://r4sky0.github.io/sphinx-autodoc-java/"
+Repository = "https://github.com/r4sky0/sphinx-autodoc-java"
+Issues = "https://github.com/r4sky0/sphinx-autodoc-java/issues"
+Changelog = "https://github.com/r4sky0/sphinx-autodoc-java/releases"
+
+[project.scripts]
+sphinx-java-autodoc = "sphinx_java_autodoc.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sphinx_java_autodoc"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/examples", "/docs", "/README.md", "/CONTRIBUTING.md", "/SECURITY.md", "/LICENSE"]
+exclude = ["/docs/_build", "/docs/api", "**/.java-autodoc-cache", "**/target", "**/build"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+include = ["*.py", "*.pyi", "pyproject.toml"]
+extend-exclude = [".venv*", "experiments", "docs/_build", "docs/api"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+

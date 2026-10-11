@@ -1,0 +1,38 @@
+# API XML schema 1
+
+The process boundary is UTF-8 XML, rooted at `<api schema="1" extractor="0.1.0">`.
+Unknown schema versions, malformed XML, DTD/entity declarations, duplicate IDs and
+missing required declaration attributes are rejected. The file is generated input,
+not a general XML document interchange service. No external entities are fetched.
+
+- `package`: `name`, followed by `doc`.
+- `type`: required `id`, `name`, `kind`, `package`, `signature`, `visibility`;
+  contains `doc` then zero or more `member` elements.
+- `member`: same attributes. Kinds include `constructor`, `method`, `field`,
+  `enum_constant`. Types include `class`, `interface`, `enum`, `record`,
+  `annotation_type`.
+- `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
+  `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration
+  even when prose is inherited. Part contents are an ordered token sequence.
+- Tokens: `text`, `literal`, `code`, `link`, `start`, `end`. Text is element text,
+  never serialized HTML to inject. `start`/`end` carry HTML element `name`;
+  `start` may contain `attr name="href"` text and a `closed` flag.
+- `link`: `target` is the compiler's canonical symbol ID; `role` identifies the
+  domain object kind. `path`, `module`, `fragment` hold external Javadoc location
+  metadata; `plain` distinguishes link/plainlink presentation. Children form the
+  label. An unresolved link has no resolved location and has a diagnostic.
+- `diagnostic`: symbol-qualified warning text, including unsupported constructs.
+  Warnings survive cache hits and are re-emitted by Sphinx.
+
+Identity examples: `example.Outer.Inner`, `example.Outer#FIELD`,
+`example.Outer#find(java.lang.String,int[])`, `example.Outer#<init>()`.
+Parameters in canonical IDs are fully qualified erased types; varargs use `[]`.
+External Javadoc fragments instead preserve declared type variables and use `...`
+for varargs, as verified against the standard doclet. Return types and
+parameter names do not affect IDs. HTML anchors are `java-` plus UTF-8 bytes of the
+ID encoded in hexadecimal: deterministic, reversible and collision-free.
+
+Declarations and diagnostics are sorted; no build timestamp or source location is
+stored. The private cache filename includes a SHA-256 input fingerprint and is not
+part of a published model. Schema evolution requires an explicit version change
+when consumers cannot safely interpret the changed structure.
