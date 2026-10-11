@@ -30,7 +30,14 @@ dependencies = ["Sphinx>=9.1,<9.2"]
 test = ["pytest>=8", "build>=1", "playwright>=1.50"]
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.17", "twine>=6", "pip-audit>=2.9", "actionlint-py>=1.7.12.25"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.17",
+    "twine>=6",
+    "pip-audit>=2.9",
+    "actionlint-py>=1.7.12.25",
+    "pre-commit>=4.3",
+]
 
 [project.urls]
 Documentation = "https://r4sky0.github.io/sphinx-autodoc-java/"
@@ -61,4 +68,3 @@ select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
-

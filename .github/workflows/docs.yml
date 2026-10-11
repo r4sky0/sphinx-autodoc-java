@@ -1,6 +1,8 @@
 name: Deploy documentation
 
-on:
+# Deploys only artifacts from same-repository pushes to main and never checks out
+# code, so workflow_run cannot run untrusted pull request content here.
+on: # zizmor: ignore[dangerous-triggers]
   workflow_run:
     workflows: [CI]
     branches: [main]

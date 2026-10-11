@@ -50,22 +50,18 @@ configured CI jobs are not evidence that an environment has passed.
 
 ```sh
 uv sync --locked
-uv run --locked ruff check .
-uv run --locked ruff format --check .
+uv run --locked pre-commit run --all-files
 uv run --locked pytest -q
 uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
 ```
 
-For Java changes, also compile with warnings as errors:
-
-```sh
-mkdir -p build/doclet-check
-javac -Xlint:all -Werror -proc:none -d build/doclet-check src/sphinx_java_autodoc/java/SphinxDoclet.java
-```
+The pre-commit hooks run Ruff, google-java-format, `javac -Xlint:all -Werror` on the
+doclet, actionlint, zizmor, typos and file checks. Keep the doclet formatted with
+google-java-format; don't hand-format it. Commit messages need conventional prefixes.
 
 Run checks appropriate to the change. For rendering changes, build both themes and
 run the browser checks described in [CONTRIBUTING.md](CONTRIBUTING.md). For workflow
-changes, run `uv run --locked actionlint`. For packaging changes, run `uv build` and
+changes, the pre-commit hooks run actionlint and zizmor. For packaging changes, run `uv build` and
 `uv run --locked twine check --strict dist/*`, and validate the installed wheel.
 Report blocked or unexecuted checks explicitly; do not broaden compatibility claims
 without testing.
