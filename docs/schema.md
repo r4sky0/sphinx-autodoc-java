@@ -8,6 +8,8 @@ not a general XML document interchange service. No external entities are fetched
 - `package`: `name`, followed by `doc`.
 - `type`: required `id`, `name`, `kind`, `package`, `signature`, `visibility`;
   contains `doc` then zero or more `member` elements.
+  Visibility includes enclosing declarations: a public nested type inside a
+  protected type has `visibility="protected"`; its signature retains `public`.
 - `member`: same attributes. Kinds include `constructor`, `method`, `field`,
   `enum_constant`. Types include `class`, `interface`, `enum`, `record`,
   `annotation_type`.
@@ -16,9 +18,13 @@ not a general XML document interchange service. No external entities are fetched
   even when prose is inherited. Part contents are an ordered token sequence.
   Throws labels name the overriding method's exception after generic substitution;
   type variables use their declared names. This preserves the schema 1 structure.
+  Repeated `throws` descriptions for one exception share a part, separated by
+  paragraph tokens, so explicit and omitted inheritance preserve all descriptions.
 - Tokens: `text`, `literal`, `code`, `link`, `start`, `end`. Text is element text,
   never serialized HTML to inject. `start`/`end` carry HTML element `name`;
   `start` may contain `attr name="href"` text and a `closed` flag.
+  Attribute entities are decoded once before XML serialization. HTML line breaks
+  remain `start name="br"` tokens and render as native line blocks.
 - `link`: `target` is the compiler's canonical symbol ID; `role` identifies the
   domain object kind. `path`, `module`, `fragment` hold external Javadoc location
   metadata; `plain` distinguishes link/plainlink presentation. Children form the

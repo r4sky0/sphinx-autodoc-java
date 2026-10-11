@@ -92,7 +92,11 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                         f"Javadoc HTML attributes on <{name}> are not supported except href; move layout and assets to a guide."
                     )
                 if name == "br":
-                    append(nodes.Text("\n"))
+                    append(
+                        nodes.Text("\n")
+                        if isinstance(stack[-1][1], nodes.literal_block)
+                        else nodes.line()
+                    )
                     continue
                 if any(isinstance(n, nodes.literal_block) for _, n in stack):
                     if name != "code":
@@ -152,9 +156,30 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                 warn(f"Unsupported XML comment token {tag}; regenerate the model.")
 
     tokens(part)
-    # Empty paragraphs may arise from whitespace around HTML blocks.
+
+    def split_lines(element):
+        lines = [element.copy()]
+        for child in element.children:
+            if isinstance(child, nodes.line):
+                lines.append(element.copy())
+            elif isinstance(child, nodes.Text):
+                lines[-1] += child
+            else:
+                fragments = split_lines(child)
+                lines[-1] += fragments[0]
+                for fragment in fragments[1:]:
+                    lines.append(element.copy())
+                    lines[-1] += fragment
+        return lines
+
     for p in list(root.findall(nodes.paragraph)):
-        if not p.astext().strip():
+        if any(p.findall(nodes.line)):
+            p.replace_self(
+                nodes.line_block(
+                    "", *[nodes.line("", "", *line.children) for line in split_lines(p)]
+                )
+            )
+        elif not p.astext().strip():
             p.parent.remove(p)
     return root.children
 

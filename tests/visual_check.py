@@ -43,6 +43,23 @@ def main():
                     assert page.locator("pre").count() > 0
                     assert page.locator("ul li ol li").count() == 2
                     assert page.locator('a[href^="#java-"]').count() > 0
+                    lines = page.locator("dl.java .line-block > .line")
+                    assert lines.all_text_contents() == [
+                        "First line",
+                        "Second line",
+                        "Third line",
+                        "Last line.",
+                    ]
+                    assert (
+                        lines.nth(1).bounding_box()["y"]
+                        > lines.nth(0).bounding_box()["y"]
+                    )
+                    assert (
+                        page.get_by_role("link", name="query parameters").get_attribute(
+                            "href"
+                        )
+                        == "https://example.test/?a=1&b=2"
+                    )
                     api_width = page.evaluate("document.documentElement.scrollWidth")
                     page.screenshot(
                         path=str(output / f"{theme}-{width}.png"), full_page=True

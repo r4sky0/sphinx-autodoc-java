@@ -120,6 +120,8 @@ A bare member name selects every overload of that name; an exact signature selec
 one. Use erased fully qualified parameter types and ``[]`` for varargs. Constructors
 use ``<init>(...)``. ``protected`` includes public and protected; ``public`` excludes
 protected declarations. Private and package-private declarations are never exported.
+Public nested types inside protected enclosing types are also excluded in public
+mode. Declaration signatures retain their original modifiers.
 ``@hidden`` declarations are omitted. Ancestor methods are not duplicated under each
 subclass; overriding declarations inherit their comments, while other ancestor
 methods remain documented on the declaring type. Nested types have their own pages.
@@ -273,6 +275,9 @@ type parameters), ``@return``, ``@throws``/``@exception``, ``@see``, ``@since`` 
 are processed from compiler trees. HTML paragraphs, nested ordered/unordered lists,
 preformatted code, emphasis, strong text and absolute HTTP(S)/mailto links become
 native nodes. Literal text is never interpreted as RST, and raw HTML is not emitted.
+HTML link attribute entities are decoded once, and ``<br>`` preserves line breaks
+and inline formatting. Repeated ``@throws`` descriptions for the same exception
+are retained in order, including when inherited.
 
 Overriding methods inherit omitted descriptions, parameters, returns and declared
 throws documentation. Parameter matching is positional, so renamed parameters work.
@@ -306,7 +311,8 @@ The Sphinx cache lives under ``<doctreedir>/java-cache``. The CLI defaults to
 contents, classpath order and contents, source release, tool identity/JDK modules,
 extension version and extractor code. Cache hits still hash inputs; this costs I/O
 but catches edits even when timestamps are preserved. A changed input triggers
-whole-project extraction and re-reading of consuming Sphinx documents.
+whole-project extraction and re-reading of all Sphinx documents, including pages
+containing only Java roles and directives for types that were previously missing.
 
 Output contains no build timestamps or machine-specific source paths. Temporary
 work directories and atomic replacement protect simultaneous extraction into one

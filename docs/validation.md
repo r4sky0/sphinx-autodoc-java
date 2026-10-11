@@ -37,7 +37,7 @@ in a fresh uv project, including generated pages and a handwritten class excerpt
 
 ## Automated checks
 
-Final local results: **27 tests passed on Python 3.12.13** (37.13 seconds), and
+Initial local release validation: **27 tests passed on Python 3.12.13** (37.13 seconds), and
 **27 passed on Python 3.14.5** (33.01 seconds). The doclet also compiled with
 `javac -Xlint:all -Werror -proc:none`. Alabaster, Classic and text builds passed
 with warnings treated as errors. A separately installed wheel successfully ran
@@ -45,6 +45,17 @@ strict extraction and a parallel Sphinx build; its bundled doclet was verified.
 A wheel rebuilt from the source archive had identical file contents to the workspace
 wheel. The source archive includes the extraction experiment, fixtures and tests.
 These timings describe the test suite, not extraction performance benchmarks.
+
+After the review fixes, **38 tests passed locally on Python 3.12.13 and 3.14.5**
+with JDK 25.0.3 and Sphinx 9.1.0. The added regressions cover incremental role-only
+pages and missing-type directives with one/two workers, decoded link attributes,
+repeated exception descriptions with explicit/omitted inheritance and subtype
+matching, enclosing-type visibility, and native line breaks with inline formatting.
+Compiler warnings-as-errors and strict Alabaster, Classic and text builds passed.
+The updated browser check could not run locally because the sandbox denied binding
+its localhost HTTP server; its new assertions still require a CI browser run.
+Locked offline dependency synchronization was blocked by uncached packages, so
+these local checks reused the existing validation environments.
 
 `tests/test_integration.py` exercises real JDK and Sphinx subprocesses:
 

@@ -146,11 +146,8 @@ def prepare(app):
 
 
 def outdated(app, env, added, changed, removed):
-    return (
-        sorted(env.get_domain("java").data["documents"] - removed)
-        if app._java_changed
-        else []
-    )
+    # Roles and missing-type directives also depend on the complete Java model.
+    return sorted(env.found_docs - removed) if app._java_changed else []
 
 
 def add_static_path(app):
@@ -176,7 +173,7 @@ def setup(app):
     app.connect("env-get-outdated", outdated)
     return {
         "version": VERSION,
-        "env_version": 1,
+        "env_version": 2,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
