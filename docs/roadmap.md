@@ -6,8 +6,7 @@
    additional backends. Keep JDK 25 / Sphinx 9.1 as the narrow baseline until wider
    runtime versions are actually tested.
 2. **Extend Javadoc fidelity:** structured Markdown and snippet support; record
-   accessor/canonical-constructor documentation synthesis; generic exception
-   substitution in inherited `@throws`; better support for tables, definition
+   accessor/canonical-constructor documentation synthesis; better support for tables, definition
    lists, headings and local documentation assets. Retain actionable diagnostics
    until each behavior has fixtures.
 3. **Support JPMS deliberately:** module-qualified IDs, module paths, split-package

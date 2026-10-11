@@ -106,9 +106,10 @@ published artifact and is not expected to be deterministic.
 - Declared members are shown. Non-overridden inherited methods stay on ancestor
   pages; no copied inherited-member catalogue. Compiler-generated record/enum methods
   are listed but standard-doclet-generated prose is not synthesized.
-- Inheritance does not implement generic exception-type substitution across an
-  overridden method; unresolved parts warn. Ordinary exact/subtype exception matching
-  is implemented. Annotation processors/Lombok transformations are not executed.
+- Inheritance substitutes declared generic exception types across overridden
+  methods, including intermediate generic ancestors and renamed method type
+  parameters. Unresolved parts still warn. Annotation processors/Lombok
+  transformations are not executed.
 - Signatures preserve type spelling/annotations but are display text, not individual
   clickable type tokens. Semantic links in comments and explicit Java roles are native
   references. Arbitrary/manual Java declaration directives are not supplied.
