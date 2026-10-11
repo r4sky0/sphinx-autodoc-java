@@ -45,7 +45,7 @@ sphinx-java-autodoc = "sphinx_java_autodoc.__main__:main"
 packages = ["src/sphinx_java_autodoc"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/examples", "/docs", "/README.md", "/CONTRIBUTING.md", "/SECURITY.md", "/LICENSE"]
+include = ["/src", "/tests", "/examples", "/experiments", "/docs", "/README.md", "/CONTRIBUTING.md", "/SECURITY.md", "/LICENSE"]
 exclude = ["/docs/_build", "/docs/api", "**/.java-autodoc-cache", "**/target", "**/build"]
 
 [tool.pytest.ini_options]
