@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from urllib.parse import quote
-import xml.etree.ElementTree as ET
 
 from docutils import nodes
 from docutils.parsers.rst import directives
@@ -13,29 +12,19 @@ from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.nodes import make_refnode
 
+from .model import (
+    MEMBER_GROUPS,
+    PACKAGES,
+    REFERENCES,
+    SYMBOLS,
+    grouped,
+    local_name,
+    member_label,
+    visible,
+)
 from .render import deprecated, documentation, summary
 
 LOGGER = logging.getLogger(__name__)
-# The extracted model, indexed by prepare() on every build. It stays out of the pickled
-# environment; forked parallel workers inherit it.
-SYMBOLS: dict[str, ET.Element] = {}
-PACKAGES: dict[str, ET.Element] = {}
-REFERENCES: dict[str, dict[str, str]] = {}
-
-
-def use_model(root: ET.Element) -> None:
-    SYMBOLS.clear()
-    SYMBOLS.update(
-        (e.get("id"), e) for e in root.findall("type") + root.findall("type/member")
-    )
-    PACKAGES.clear()
-    PACKAGES.update((p.get("name"), p) for p in root.findall("package"))
-    REFERENCES.clear()
-    REFERENCES.update((n.get("target"), dict(n.attrib)) for n in root.iter("link"))
-
-
-def visible(element, visibility: str) -> bool:
-    return visibility == "protected" or element.get("visibility") == "public"
 
 
 def anchor(symbol: str) -> str:
@@ -50,38 +39,6 @@ def role_for(element):
         if element.get("kind") in {"method", "constructor"}
         else "field"
     )
-
-
-# Member groups in display order, as section headings of generated type pages.
-MEMBER_GROUPS = {
-    "constructor": "Constructors",
-    "field": "Fields and constants",
-    "method": "Methods",
-}
-TYPE_GROUPS = {
-    "interface": "Interfaces",
-    "class": "Classes",
-    "enum": "Enums",
-    "record": "Records",
-    "annotation_type": "Annotation types",
-}
-
-
-def member_group(member) -> str:
-    kind = member.get("kind")
-    return kind if kind in {"constructor", "method"} else "field"
-
-
-def member_label(symbol: str) -> str:
-    """A member's name with simple parameter types, as in Javadoc summaries."""
-    owner, _, rest = symbol.partition("#")
-    name, paren, parameters = rest.partition("(")
-    if name == "<init>":
-        name = owner.rpartition(".")[2]
-    if not paren:
-        return name
-    simple = [p.rpartition(".")[2] for p in parameters.rstrip(")").split(",") if p]
-    return f"{name}({', '.join(simple)})"
 
 
 # Signature tokens from the model mapped to Sphinx's standard signature nodes.
@@ -240,7 +197,7 @@ class AutoClass(JavaDirective):
                 if s.strip()
             }
             matched = set()
-            groups = {}
+            members = []
             for member in element.findall("member"):
                 names = {member.get("name"), member.get("id").split("#", 1)[1]}
                 if selected and not names & selected:
@@ -248,7 +205,7 @@ class AutoClass(JavaDirective):
                 matched.update(names & selected)
                 if names & excluded or not self.visible(member):
                     continue
-                groups.setdefault(member_group(member), []).append(member)
+                members.append(member)
             for missing in sorted(selected - matched):
                 LOGGER.warning(
                     "Java member %s#%s was not found.",
@@ -259,11 +216,10 @@ class AutoClass(JavaDirective):
                     subtype="member",
                 )
             content = result[-1][-1]
-            for group, title in MEMBER_GROUPS.items():
-                if group in groups:
-                    content += nodes.rubric("", title)
-                    for member in groups[group]:
-                        content.extend(self.describe(member))
+            for group, found in grouped(members).items():
+                content += nodes.rubric("", MEMBER_GROUPS[group])
+                for member in found:
+                    content.extend(self.describe(member))
         return result
 
 
@@ -320,14 +276,7 @@ class AutoSummary(JavaDirective):
                 continue
             element = self.lookup(symbol)
             if element is not None:
-                owner, _, member = symbol.partition("#")
-                label = (
-                    member_label(symbol)
-                    if member
-                    else symbol[len(element.get("package")) + 1 :]
-                    if element.get("package")
-                    else symbol
-                )
+                label = local_name(element)
             elif symbol in PACKAGES:
                 element, label = PACKAGES[symbol], symbol
             else:

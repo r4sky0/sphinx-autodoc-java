@@ -6,13 +6,14 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 
 from sphinx.errors import ExtensionError
+
+from .model import read_model
 
 VERSION = "0.1.0"
 DOCLET = Path(__file__).parent / "java" / "SphinxDoclet.java"
@@ -56,102 +57,6 @@ def atomic_write(path: Path, data: bytes) -> None:
             os.replace(temporary, path)
         finally:
             temporary.unlink(missing_ok=True)
-
-
-def read_model(path: Path) -> ET.Element:
-    try:
-        data = path.read_bytes().decode("utf-8")
-        if "<!DOCTYPE" in data.upper() or "<!ENTITY" in data.upper():
-            raise ValueError("DTD and entity declarations are not allowed")
-        root = ET.fromstring(data)
-        if root.tag != "api" or root.get("schema") != "1":
-            raise ValueError(
-                "expected API XML schema 1; regenerate with sphinx-java-autodoc"
-            )
-        packages = [p.get("name") for p in root.findall("package")]
-        qualified = r"[\w$]+(?:\.[\w$]+)*"
-        if any(p is None or (p and not re.fullmatch(qualified, p)) for p in packages):
-            raise ValueError("invalid package name")
-        if len(set(packages)) != len(packages):
-            raise ValueError("duplicate package")
-        owners = {id(m): t for t in root.findall("type") for m in t.findall("member")}
-        ids = set()
-        for node in root.findall("type") + root.findall("type/member"):
-            for key in ("id", "name", "kind", "visibility", "package"):
-                if key not in node.attrib:
-                    raise ValueError(f"{node.tag} is missing {key}")
-            if node.find("sig") is None:
-                raise ValueError(f"{node.tag} is missing sig")
-            if node.attrib["id"] in ids:
-                raise ValueError(f"duplicate symbol {node.attrib['id']}")
-            ids.add(node.attrib["id"])
-            if node.get("visibility") not in {"public", "protected"}:
-                raise ValueError("invalid visibility")
-            symbol, name, kind, package = (
-                node.get(key) for key in ("id", "name", "kind", "package")
-            )
-            if not name or not "".join(node.find("sig").itertext()).strip():
-                raise ValueError("empty declaration name or signature")
-            if package not in packages:
-                raise ValueError(f"undeclared package {package!r} for {symbol}")
-            if node.tag == "type":
-                if kind not in {
-                    "class",
-                    "interface",
-                    "enum",
-                    "record",
-                    "annotation_type",
-                }:
-                    raise ValueError(f"invalid type kind {kind!r}")
-                local = symbol.removeprefix(package + ".") if package else symbol
-                if (
-                    not re.fullmatch(qualified, local)
-                    or local.rsplit(".", 1)[-1] != name
-                    or (package and not symbol.startswith(package + "."))
-                ):
-                    raise ValueError(f"invalid type identity {symbol!r}")
-            else:
-                owner = owners[id(node)]
-                if package != owner.get("package") or not symbol.startswith(
-                    owner.get("id") + "#"
-                ):
-                    raise ValueError(f"invalid member owner for {symbol!r}")
-                suffix = symbol.split("#", 1)[1]
-                if kind in {"method", "constructor"}:
-                    parameter = qualified + r"(?:\[\])*"
-                    pattern = (
-                        re.escape(name) + rf"\((?:{parameter}(?:,{parameter})*)?\)"
-                    )
-                    valid = re.fullmatch(pattern, suffix) and (
-                        name == "<init>"
-                        if kind == "constructor"
-                        else re.fullmatch(r"[\w$]+", name)
-                    )
-                else:
-                    valid = (
-                        kind in {"field", "enum_constant", "record_component"}
-                        and suffix == name
-                        and re.fullmatch(r"[\w$]+", name)
-                    )
-                if not valid:
-                    raise ValueError(f"invalid member identity or kind for {symbol!r}")
-        tokens = {"k", "kt", "t", "q", "n", "tv", "pname", "v", "r"}
-        for sig in root.findall("type/sig") + root.findall("type/member/sig"):
-            for token in sig.iter():
-                if token is sig or token.tag == "param":
-                    continue
-                if token.tag == "params":
-                    if any(child.tag != "param" for child in token):
-                        raise ValueError("invalid signature parameter list")
-                elif token.tag not in tokens or len(token):
-                    raise ValueError(f"invalid signature token {token.tag!r}")
-                elif token.tag == "r" and not re.fullmatch(
-                    qualified, token.get("target", "")
-                ):
-                    raise ValueError("invalid signature type reference")
-        return root
-    except (OSError, ET.ParseError, ValueError) as exc:
-        raise ExtensionError(f"Java autodoc: invalid model {path}: {exc}") from exc
 
 
 def extract(

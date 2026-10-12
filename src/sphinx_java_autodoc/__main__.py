@@ -7,7 +7,8 @@ import sys
 
 from sphinx.errors import ExtensionError
 
-from .extractor import atomic_write, extract, read_model
+from .extractor import atomic_write, extract
+from .model import read_model
 
 
 def main():
