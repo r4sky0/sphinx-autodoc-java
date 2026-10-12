@@ -15,7 +15,7 @@ from sphinx.errors import ExtensionError
 
 from .model import read_model
 
-VERSION = "0.1.0"  # x-release-please-version
+VERSION = "0.2.0"  # x-release-please-version
 DOCLET = Path(__file__).parent / "java" / "SphinxDoclet.java"
 
 
