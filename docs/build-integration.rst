@@ -170,7 +170,7 @@ deploys to GitHub Pages. In the repository settings, set **Pages → Source** to
          - uses: actions/setup-python@v7
            with:
              python-version: "3.12"
-         - run: python -m pip install "git+https://github.com/r4sky0/sphinx-java-autodoc.git"
+         - run: python -m pip install sphinx-java-autodoc
          # Prepare java_classpath inputs and generated sources here, for example
          # with the Maven or Gradle commands below.
          - run: sphinx-build -W --keep-going -n docs docs/_build/html

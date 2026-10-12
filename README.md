@@ -29,7 +29,7 @@ for the tested versions.
 ## Quick start
 
 ```sh
-uv add "sphinx-java-autodoc @ git+https://github.com/r4sky0/sphinx-java-autodoc.git"
+uv add sphinx-java-autodoc
 ```
 
 In `docs/conf.py`:

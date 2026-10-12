@@ -32,15 +32,13 @@ From an existing uv project:
 
 .. code-block:: console
 
-   uv add "sphinx-java-autodoc @ git+https://github.com/r4sky0/sphinx-java-autodoc.git"
+   uv add sphinx-java-autodoc
 
 Or install into an existing Python virtual environment:
 
 .. code-block:: console
 
-   python -m pip install "git+https://github.com/r4sky0/sphinx-java-autodoc.git"
-
-The extension has not been published to PyPI yet, so install it from GitHub.
+   python -m pip install sphinx-java-autodoc
 
 Point Sphinx at your sources
 ----------------------------
