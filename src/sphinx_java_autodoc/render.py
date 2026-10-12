@@ -182,6 +182,11 @@ def comment(part: ET.Element, location, quiet: bool = False) -> list[nodes.Node]
         group += nodes.tbody("", *rows[head:])
         table.children = [c for c in table.children if isinstance(c, nodes.title)]
         table += group
+        # Themes style tables differently, but all leave a plain wrapper alone, so the
+        # wrapper is what scrolls a wide table.
+        wrapper = nodes.container(classes=["java-table-wrapper"])
+        table.parent.replace(table, wrapper)
+        wrapper += table
 
     def append(node):
         current = stack[-1][1]
@@ -401,10 +406,41 @@ def quiet_reference(app, env, node, contnode):
     return contnode if node.get("java:quiet") else None
 
 
+FIELD_TITLES = {
+    "param": "Parameters",
+    "typeparam": "Type parameters",
+    "return": "Returns",
+    "throws": "Throws",
+    "see": "See also",
+    "since": "Since",
+}
+
+
+def field(kind: str, items) -> nodes.field:
+    """One field per kind; labelled items read "name – description", as in Sphinx."""
+    bodies = []
+    for label, content in items:
+        content = list(content)
+        if label:
+            if content and isinstance(content[0], nodes.paragraph):
+                content[0].insert(0, [nodes.strong("", label), nodes.Text(" – ")])
+            else:
+                content.insert(0, nodes.paragraph("", "", nodes.strong("", label)))
+        bodies.append(content)
+    if len(bodies) == 1:
+        body = nodes.field_body("", *bodies[0])
+    else:
+        body = nodes.field_body(
+            "", nodes.bullet_list("", *(nodes.list_item("", *b) for b in bodies))
+        )
+    return nodes.field("", nodes.field_name("", FIELD_TITLES.get(kind, kind)), body)
+
+
 def documentation(element: ET.Element, location) -> list[nodes.Node]:
     result: list[nodes.Node] = []
     fields = nodes.field_list()
     notice = None
+    fields_by_kind: dict[str, list] = {}
     if deprecated(element):
         # The structure of Sphinx's deprecated directive, which themes style.
         notice = addnodes.versionmodified(type="deprecated", version="")
@@ -417,22 +453,9 @@ def documentation(element: ET.Element, location) -> list[nodes.Node]:
         elif kind == "deprecated":
             notice.extend(content)
         else:
-            titles = {
-                "param": "Parameter",
-                "typeparam": "Type parameter",
-                "return": "Returns",
-                "throws": "Throws",
-                "see": "See also",
-                "since": "Since",
-                "deprecated": "Deprecated",
-            }
-            label = titles.get(kind, str(kind)) + (
-                " " + part.get("label") if part.get("label") else ""
-            )
-            field = nodes.field(
-                "", nodes.field_name("", label), nodes.field_body("", *content)
-            )
-            fields += field
+            fields_by_kind.setdefault(kind, []).append((part.get("label"), content))
+    for kind, items in fields_by_kind.items():
+        fields += field(kind, items)
     if notice is not None:
         if notice.children and isinstance(notice[0], nodes.paragraph):
             label = "Deprecated: "

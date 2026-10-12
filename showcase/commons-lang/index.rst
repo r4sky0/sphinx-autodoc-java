@@ -12,7 +12,9 @@ under the `Apache License 2.0 <https://www.apache.org/licenses/LICENSE-2.0>`_. T
 showcase is not affiliated with or endorsed by the Apache Software Foundation; use
 the project's own documentation as the authoritative reference.
 
-`Back to the sphinx-java-autodoc documentation <../../index.html>`_
+This version uses the |theme| theme. The same site is also available with |themes|.
+
+`Back to the sphinx-java-autodoc documentation <../../../index.html>`_
 
 .. toctree::
    :maxdepth: 2

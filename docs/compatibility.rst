@@ -36,8 +36,10 @@ Your library's own toolchain can stay as it is.
      - Linux, macOS and Windows in GitHub Actions
    * - HTML themes
      - Native Sphinx nodes
-     - Alabaster and Classic in Chromium at desktop (1440px) and mobile (390px)
-       widths. Classic keeps its theme-level minimum page width on mobile.
+     - Alabaster 1.0.0, Sphinx Classic, Furo 2025.12.19, Read the Docs 3.1.0, PyData
+       0.23.0 and Lumina 2.9.9 in Chromium at desktop (1440px) and mobile (390px)
+       widths. Classic keeps a minimum width on mobile; Read the Docs and PyData
+       overflow on phones for native Sphinx objects too, and Java pages stay within that.
    * - Other builders
      - Native Sphinx nodes
      - Text builder
@@ -89,7 +91,7 @@ Evidence
 
 The `CI workflow <https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml>`_
 runs the operating system and Python matrix, the real JDK and Sphinx integration
-tests, packaging checks against the installed wheel, strict builds in both themes
+tests, packaging checks against the installed wheel, strict builds in six themes
 and the Chromium browser checks. Browser screenshots are kept as run artifacts.
 The integration tests compare constructor, generic, array and varargs anchors with
 actual standard Javadoc output, check byte-for-byte XML determinism across checkout

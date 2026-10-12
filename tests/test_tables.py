@@ -110,10 +110,11 @@ def test_tables_become_native_tables_with_headers_spans_and_optional_end_tags(
     assert warnings == []
     assert [type(child) for child in result.children] == [
         nodes.paragraph,
-        nodes.table,
+        nodes.container,
         nodes.paragraph,
     ]
-    table = result.children[1]
+    assert result.children[1]["classes"] == ["java-table-wrapper"]
+    table = result.children[1][0]
     assert table.children[0].astext() == "Caption text"
     assert isinstance(table.children[0][1], nodes.literal)
     tgroup = table.children[1]
@@ -155,7 +156,9 @@ def test_table_without_header_rows_and_nested_tables(warnings):
     outer, nested = list(result.findall(nodes.table))
     assert not list(outer.children[0].findall(nodes.thead))
     assert cells(nested) == [["inner"]]
-    assert nested.parent.parent.parent.parent.parent is outer
+    # entry > row > tbody > tgroup > table, each table inside its scroll wrapper
+    assert nested.parent.parent.parent.parent.parent.parent is outer
+    assert nested.parent["classes"] == ["java-table-wrapper"]
 
 
 @pytest.mark.parametrize(

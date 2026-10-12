@@ -1,8 +1,13 @@
 Java API: Apache Commons Lang
 =============================
 
-`Browse the Apache Commons Lang API <showcase/commons-lang/index.html>`_:
-version |showcase-version| of `Apache Commons Lang
+Browse the API in
+`Furo <showcase/commons-lang/furo/index.html>`__,
+`Read the Docs <showcase/commons-lang/rtd/index.html>`__,
+`PyData <showcase/commons-lang/pydata/index.html>`__ or
+`Lumina <showcase/commons-lang/lumina/index.html>`__: the same generated pages in four
+themes, with no theme-specific configuration. It's version |showcase-version| of
+`Apache Commons Lang
 <https://commons.apache.org/proper/commons-lang/>`_, about 260 source files,
 generated from unmodified sources. Apache Commons Lang is licensed under the Apache
 License 2.0; this site is not affiliated with the Apache Software Foundation.

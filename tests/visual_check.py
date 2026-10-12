@@ -19,6 +19,23 @@ from threading import Thread
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
+# Theme name and its build directory under examples/standalone/docs/_build.
+THEMES = (
+    ("alabaster", "html"),
+    ("classic", "classic"),
+    ("furo", "furo"),
+    ("sphinx_rtd_theme", "sphinx_rtd_theme"),
+    ("pydata_sphinx_theme", "pydata_sphinx_theme"),
+    ("lumina", "lumina"),
+)
+# Themes whose search page lists results with Sphinx's own search script.
+SPHINX_SEARCH = {
+    "alabaster",
+    "classic",
+    "furo",
+    "sphinx_rtd_theme",
+    "pydata_sphinx_theme",
+}
 
 
 def main():
@@ -37,17 +54,26 @@ def main():
     try:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
-            for theme, folder in (("alabaster", "html"), ("classic", "classic")):
+            for theme, folder in THEMES:
                 for width in (1440, 390):
                     page = browser.new_page(viewport={"width": width, "height": 1000})
                     base = f"http://127.0.0.1:{server.server_port}/{folder}"
-                    page.goto(base + "/index.html")
-                    theme_width = page.evaluate("document.documentElement.scrollWidth")
-                    page.goto(base + "/api/type-demo.Widget.html")
+                    # The theme's own layout: its index page and native Sphinx objects.
+                    theme_width = 0
+                    for reference in ("index", "reference"):
+                        # Themes load icons and fonts late; measure the settled page.
+                        page.goto(f"{base}/{reference}.html", wait_until="networkidle")
+                        theme_width = max(
+                            theme_width,
+                            page.evaluate("document.documentElement.scrollWidth"),
+                        )
+                    page.goto(
+                        base + "/api/type-demo.Widget.html", wait_until="networkidle"
+                    )
                     assert page.locator("dl.java").count() >= 8
                     assert page.locator("h2", has_text="Constructors").count() == 1
                     assert page.locator("pre").count() > 0
-                    assert page.locator("ul li ol li").count() == 2
+                    assert page.locator("dl.java ul li ol li").count() == 2
                     assert page.locator('a[href^="#java-"]').count() > 0
                     lines = page.locator("dl.java .line-block > .line")
                     assert lines.all_text_contents() == [
@@ -74,7 +100,8 @@ def main():
                     )
                     assert table.locator("thead th").count() == 3
                     assert 'Labelled "widget"' in table.inner_text()
-                    assert table.bounding_box()["width"] <= width
+                    wrapper = page.locator(".java-table-wrapper")
+                    assert wrapper.bounding_box()["width"] <= width
                     api_width = page.evaluate("document.documentElement.scrollWidth")
                     page.screenshot(
                         path=str(output / f"{theme}-{width}.png"), full_page=True
@@ -88,20 +115,23 @@ def main():
                             "page_overflow": api_width > width + 1,
                         }
                     )
-                    # Classic has a fixed sidebar/minimum width even without Java content.
+                    # Classic has a fixed minimum width, and some themes overflow on phones
+                    # for native objects too; Java content must not add to that.
                     assert api_width <= max(width, theme_width) + 1, (
                         f"Java content adds page overflow: {theme} at {width}px"
                     )
                     page.goto(base + "/index.html")
-                    page.locator('a[href="guide.html"]').first.click()
+                    page.locator('.toctree-wrapper a[href="guide.html"]').first.click()
                     assert page.url.endswith("/guide.html")
-                    page.goto(base + "/search.html?q=convert")
-                    page.wait_for_function(
-                        "document.querySelectorAll('#search-results li').length > 0"
-                    )
-                    page.screenshot(
-                        path=str(output / f"{theme}-{width}-search.png"), full_page=True
-                    )
+                    if theme in SPHINX_SEARCH:
+                        page.goto(base + "/search.html?q=convert")
+                        page.wait_for_function(
+                            "document.querySelectorAll('#search-results li').length > 0"
+                        )
+                        page.screenshot(
+                            path=str(output / f"{theme}-{width}-search.png"),
+                            full_page=True,
+                        )
                     page.close()
             browser.close()
     finally:
