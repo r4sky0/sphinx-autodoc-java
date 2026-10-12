@@ -47,7 +47,8 @@ def reference(token: ET.Element, children: list[nodes.Node]) -> nodes.Node:
     return node
 
 
-def comment(part: ET.Element, location) -> list[nodes.Node]:
+def comment(part: ET.Element, location, quiet: bool = False) -> list[nodes.Node]:
+    """Renders comment tokens; ``quiet`` skips warnings for repeated renderings."""
     root = nodes.container()
     stack: list[tuple[str, nodes.Element]] = [("root", root)]
     block_tags = {"p", "ul", "ol", "li", "pre", "blockquote"}
@@ -58,7 +59,8 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
     sealed: set[int] = set()
 
     def warn(message):
-        LOGGER.warning(message, location=location, type="java", subtype="html")
+        if not quiet:
+            LOGGER.warning(message, location=location, type="java", subtype="html")
 
     def close(tag):
         for i in range(len(stack) - 1, 0, -1):
@@ -224,7 +226,7 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
                 else:
                     append(nodes.Text(value))
             elif tag == "link":
-                label = comment(token, location)
+                label = comment(token, location, quiet)
                 inline = [child for p in label for child in p.children]
                 append(reference(token, inline))
             elif tag == "start":
@@ -352,14 +354,68 @@ def comment(part: ET.Element, location) -> list[nodes.Node]:
     return root.children
 
 
+# Sphinx's deprecated directive labels its text with these classes.
+CHANGE_CLASSES = ["versionmodified", "deprecated"]
+# Javadoc's default first sentence ends at a period followed by whitespace.
+SENTENCE_END = re.compile(r"\.(?=\s|$)")
+
+
+def deprecated(element: ET.Element) -> bool:
+    return element.find("doc/part[@kind='deprecated']") is not None or (
+        "@java.lang.Deprecated" in element.get("signature", "")
+    )
+
+
+def summary(element: ET.Element, location) -> list[nodes.Node]:
+    """Returns the first sentence of the description as inline nodes."""
+    body = element.find("doc/part[@kind='body']")
+    content = comment(body, location, quiet=True) if body is not None else []
+    if not content or not isinstance(content[0], nodes.paragraph):
+        return []
+    done = False
+
+    def truncate(node):
+        nonlocal done
+        if isinstance(node, nodes.Text):
+            text = node.astext()
+            if match := SENTENCE_END.search(text):
+                done = True
+                text = text[: match.end()]
+            return nodes.Text(text)
+        copy = node.copy()
+        for child in node.children:
+            copy += truncate(child)
+            if done:
+                break
+        return copy
+
+    sentence = truncate(content[0])
+    # The full description reports unresolved links; the summary repeats them quietly.
+    for reference in sentence.findall(addnodes.pending_xref):
+        reference["java:quiet"] = True
+    return sentence.children
+
+
+def quiet_reference(app, env, node, contnode):
+    """Sphinx missing-reference handler: summary links fall back to their text."""
+    return contnode if node.get("java:quiet") else None
+
+
 def documentation(element: ET.Element, location) -> list[nodes.Node]:
     result: list[nodes.Node] = []
     fields = nodes.field_list()
+    notice = None
+    if deprecated(element):
+        # The structure of Sphinx's deprecated directive, which themes style.
+        notice = addnodes.versionmodified(type="deprecated", version="")
+        result.append(notice)
     for part in element.findall("doc/part"):
         content = comment(part, location)
         kind = part.get("kind")
         if kind == "body":
             result.extend(content)
+        elif kind == "deprecated":
+            notice.extend(content)
         else:
             titles = {
                 "param": "Parameter",
@@ -377,6 +433,13 @@ def documentation(element: ET.Element, location) -> list[nodes.Node]:
                 "", nodes.field_name("", label), nodes.field_body("", *content)
             )
             fields += field
+    if notice is not None:
+        if notice.children and isinstance(notice[0], nodes.paragraph):
+            label = "Deprecated: "
+            notice[0].insert(0, nodes.inline("", label, classes=CHANGE_CLASSES))
+        else:
+            label = nodes.inline("", "Deprecated.", classes=CHANGE_CLASSES)
+            notice.insert(0, nodes.paragraph("", "", label))
     if fields.children:
         result.append(fields)
     return result
