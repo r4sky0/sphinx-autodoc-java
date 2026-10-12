@@ -1,6 +1,9 @@
-"""Opt-in browser validation; run after building Alabaster and Classic HTML.
+"""Opt-in browser validation of the standalone fixture site in Alabaster and Classic.
 
     python -m playwright install chromium
+    sphinx-build -W --keep-going -n examples/standalone/docs examples/standalone/docs/_build/html
+    sphinx-build -W --keep-going -n -D html_theme=classic examples/standalone/docs \\
+        examples/standalone/docs/_build/classic
     python tests/visual_check.py
 
 Produces screenshots and a JSON report under build/visual. Not part of pytest:
@@ -23,7 +26,10 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer(
         ("127.0.0.1", 0),
-        partial(SimpleHTTPRequestHandler, directory=str(ROOT / "docs/_build")),
+        partial(
+            SimpleHTTPRequestHandler,
+            directory=str(ROOT / "examples/standalone/docs/_build"),
+        ),
     )
     worker = Thread(target=server.serve_forever, daemon=True)
     worker.start()

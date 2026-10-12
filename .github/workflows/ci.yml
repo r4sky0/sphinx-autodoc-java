@@ -84,30 +84,7 @@ jobs:
 
   docs:
     name: Documentation
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-      - run: uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
-      - run: uv run --locked sphinx-build -W --keep-going -n -D html_theme=classic docs docs/_build/classic
-      - run: uv run --locked sphinx-build -W --keep-going -b text docs docs/_build/text
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: documentation
-          path: docs/_build/html
-          if-no-files-found: error
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: documentation-classic
-          path: docs/_build/classic
-          if-no-files-found: error
-
-  browser:
-    name: Browser
-    needs: docs
+    needs: showcase
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -117,16 +94,60 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           java: "false"
-      - run: uv sync --locked --extra test
-      - run: uv run --locked --extra test playwright install --with-deps chromium
+      # The docs link into the showcase API through its inventory.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: showcase
+          path: build/showcase/commons-lang/html
+      - run: uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
+      - run: uv run --locked sphinx-build -W --keep-going -n -D html_theme=classic docs docs/_build/classic
+      - run: uv run --locked sphinx-build -W --keep-going -b text docs docs/_build/text
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: documentation
           path: docs/_build/html
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+          if-no-files-found: error
+
+  showcase:
+    name: Showcase
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          name: documentation-classic
-          path: docs/_build/classic
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # Fetches the pinned Commons Lang commit and fails on warnings above the baseline.
+      - run: uv run --locked python showcase/build.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: showcase
+          path: build/showcase/commons-lang/html
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: showcase-report
+          path: |
+            build/showcase/commons-lang/report.json
+            build/showcase/commons-lang/warnings.log
+          if-no-files-found: ignore
+
+  browser:
+    name: Browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: uv sync --locked --extra test
+      - run: uv run --locked --extra test playwright install --with-deps chromium
+      - name: Build the standalone fixture site in both themes
+        run: |
+          uv run --locked --extra test sphinx-build -W --keep-going -n examples/standalone/docs examples/standalone/docs/_build/html
+          uv run --locked --extra test sphinx-build -W --keep-going -n -D html_theme=classic examples/standalone/docs examples/standalone/docs/_build/classic
       - run: uv run --locked --extra test python tests/visual_check.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
@@ -153,7 +174,7 @@ jobs:
   checks:
     name: All checks
     if: always()
-    needs: [lint, test, package, docs, browser, audit]
+    needs: [lint, test, package, docs, showcase, browser, audit]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

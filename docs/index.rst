@@ -6,10 +6,11 @@ examples that explain where to start and which API to choose.
 ``sphinx-java-autodoc`` brings both into one searchable Sphinx site: write the
 guides yourself and generate the API reference from the same sources you maintain.
 
-**See the result first:** the :doc:`example API <api/index>` on this site is
-generated from a small ``demo`` package. Open :java:type:`Widget <demo.Widget>`
-to see overloads, inherited comments and links to standard Java types. It is a
-feature demonstration, not a library you need to install.
+**See the result first:** the :doc:`example API <showcase>` is the complete
+public API of Apache Commons Lang, generated from its unmodified sources and
+Javadoc comments without running the library. Open
+:java:type:`StringUtils <org.apache.commons.lang3.StringUtils>` to see overloads,
+HTML tables, ``{@value}`` constants and links to standard Java types.
 
 These docs are for **Java library maintainers adopting the extension**:
 
@@ -46,7 +47,7 @@ dependencies.
    :caption: Live example
    :maxdepth: 1
 
-   Example Java API <api/index>
+   showcase
 
 .. toctree::
    :caption: Project internals

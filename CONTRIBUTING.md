@@ -8,10 +8,18 @@ uv sync --locked
 uv run --locked pre-commit install
 uv run --locked pre-commit run --all-files
 uv run --locked pytest -q
+uv run --locked python showcase/build.py
 uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
 uv build
 uv run --locked twine check --strict dist/*
 ```
+
+The docs link into the Apache Commons Lang showcase, so build it first:
+`showcase/build.py` fetches the pinned commit, builds its site under
+`build/showcase/commons-lang/` and fails when a warning category exceeds the
+baseline in `showcase/commons-lang/showcase.json`. After a change that removes
+warnings, record the new counts with `--update-baseline`; an increase needs a
+deliberate baseline update in the same change.
 
 `pre-commit install` sets up the commit and commit-message hooks; CI runs the same
 hooks in the Lint job. They cover Ruff lint and formatting, google-java-format for
@@ -34,18 +42,21 @@ For the browser checks:
 ```sh
 uv sync --locked --extra test
 uv run --locked --extra test playwright install chromium
-uv run --locked sphinx-build -W --keep-going -D html_theme=classic docs docs/_build/classic
+uv run --locked --extra test sphinx-build -W --keep-going -n examples/standalone/docs examples/standalone/docs/_build/html
+uv run --locked --extra test sphinx-build -W --keep-going -n -D html_theme=classic examples/standalone/docs examples/standalone/docs/_build/classic
 uv run --locked --extra test python tests/visual_check.py
 ```
 
-Build the default HTML site first using the command above. Browser checks cover
+Browser checks use the small site in `examples/standalone/docs`, which renders the
+standalone fixture with every documented feature. They cover
 desktop/mobile layouts, Java API structure, navigation, and search for Alabaster
 and Classic. CI retains screenshots and a JSON report, including on failures.
 API pages must not add horizontal overflow beyond the theme's normal layout;
 Classic retains its fixed sidebar and minimum page width on mobile.
 
 The required `All checks` status covers lint, compiler warnings, the test matrix,
-source/wheel packaging, strict docs, browser checks, and dependency auditing.
+source/wheel packaging, the Commons Lang showcase baseline, strict docs, browser
+checks, and dependency auditing.
 Package checks install the wheel built from the source archive and run the real
 integration suite against that installation. Weekly CI also detects newly
 reported vulnerabilities. The application remains an initial release; passing CI
