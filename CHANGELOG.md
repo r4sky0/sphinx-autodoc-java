@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.2.0...v0.2.1) (2026-10-12)
+
+
+### Documentation
+
+* install the extension from PyPI ([#35](https://github.com/r4sky0/sphinx-java-autodoc/issues/35)) ([e281edc](https://github.com/r4sky0/sphinx-java-autodoc/commit/e281edce9f5cf5e8e06c49b8973c9756a3689d6a))
+* link the README to PyPI with a version badge ([#37](https://github.com/r4sky0/sphinx-java-autodoc/issues/37)) ([c69d0dd](https://github.com/r4sky0/sphinx-java-autodoc/commit/c69d0dd9dcb91f0623095784c963869ed1356c41))
+
 ## [0.2.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.1.0...v0.2.0) (2026-10-12)
 
 
