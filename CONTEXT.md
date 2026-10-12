@@ -32,3 +32,23 @@ _Avoid_: intersphinx link (that is a link to another Sphinx site)
 The URL anchor standard Javadoc gives a member. Unlike a symbol, it keeps type
 variable names and writes varargs as `...`.
 _Avoid_: anchor (that is the HTML id on this site)
+
+**Fingerprint**:
+The content hash of everything an extraction depends on: sources, dependencies,
+options and extractor/JDK identity. Every API model carries one; a changed
+fingerprint rereads every document.
+_Avoid_: cache key, checksum
+
+**Generated page**:
+An index, package or type page skeleton written for `java_generate`. Generated
+pages contain directives only; comments never become reStructuredText.
+
+**Page plan**:
+The generated pages of one API model and visibility, as filenames and contents,
+before anything is written.
+
+**Publication**:
+Replacing the generated pages in a directory with a page plan. A manifest records
+the pages publication owns, so edited or unowned pages are never overwritten and
+an interrupted publication recovers on the next build.
+_Avoid_: generation (that covers planning too)

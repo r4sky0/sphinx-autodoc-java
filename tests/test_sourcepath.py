@@ -8,7 +8,7 @@ import pytest
 from sphinx.errors import ExtensionError
 from test_integration import build, element
 
-from sphinx_java_autodoc.extractor import extract, read_model
+from sphinx_java_autodoc.extractor import extract
 
 
 def sources(tmp_path):
@@ -35,22 +35,21 @@ public class Parent {
 def test_lookup_sources_are_not_published_and_invalidate_by_content(tmp_path):
     source, lookup, dependency = sources(tmp_path)
     cache = tmp_path / "cache"
-    path, fingerprint = extract([source], [], cache, sourcepath=[lookup])
-    root = read_model(path)
+    root, path, fingerprint = extract([source], [], cache, sourcepath=[lookup])
     assert [t.get("id") for t in root.findall("type")] == ["Child"]
     assert not root.findall("diagnostic")
     assert "original result" in "".join(
         element(root, "Child#run(java.lang.String)").itertext()
     )
-    assert extract([source], [], cache, sourcepath=[lookup]) == (path, fingerprint)
+    assert extract([source], [], cache, sourcepath=[lookup])[1:] == (path, fingerprint)
     stamp = dependency.stat()
     dependency.write_text(
         dependency.read_text().replace("original result", "updated result")
     )
     os.utime(dependency, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
-    changed, new_fingerprint = extract([source], [], cache, sourcepath=[lookup])
+    changed, _, new_fingerprint = extract([source], [], cache, sourcepath=[lookup])
     assert new_fingerprint != fingerprint
-    assert "updated result" in "".join(read_model(changed).itertext())
+    assert "updated result" in "".join(changed.itertext())
     dependency.unlink()
     with pytest.raises(ExtensionError, match="failed"):
         extract([source], [], cache, sourcepath=[lookup])

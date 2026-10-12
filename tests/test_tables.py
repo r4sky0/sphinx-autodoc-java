@@ -9,7 +9,7 @@ import pytest
 from test_integration import build, element
 
 from sphinx_java_autodoc import render as render_module
-from sphinx_java_autodoc.extractor import extract, read_model, run
+from sphinx_java_autodoc.extractor import extract, run
 from sphinx_java_autodoc.render import comment
 
 TABLE = """package demo;
@@ -221,8 +221,7 @@ def test_tables_match_standard_doclet_and_build_in_themes(tmp_path, warnings):
     source = tmp_path / "demo" / "Tables.java"
     source.parent.mkdir()
     source.write_text(TABLE)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root, path, _ = extract([source], [], tmp_path / "cache")
     assert not root.findall("diagnostic")
     part = element(root, "demo.Tables").find("doc/part")
     content = nodes.container("", *comment(part, None))

@@ -18,7 +18,7 @@ from time import perf_counter
 
 import sphinx
 
-from sphinx_java_autodoc.extractor import VERSION, extract, read_model, run
+from sphinx_java_autodoc.extractor import VERSION, extract, run
 
 
 def main():
@@ -80,9 +80,8 @@ def main():
                 )
                 os.utime(candidate, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
             start = perf_counter()
-            path, fingerprint = extract([source], classpath, cache)
+            model, path, fingerprint = extract([source], classpath, cache)
             extraction = perf_counter() - start
-            model = read_model(path)
             if phase == "cold":
                 original = fingerprint
                 model_bytes = path.read_bytes()

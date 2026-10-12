@@ -11,9 +11,9 @@ import pytest
 from sphinx.errors import ExtensionError
 from sphinx.util.inventory import InventoryFile
 
-from sphinx_java_autodoc import generate_pages
 from sphinx_java_autodoc.domain import anchor
 from sphinx_java_autodoc.extractor import extract, read_model, run
+from sphinx_java_autodoc.pages import plan_pages, publish_pages
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "examples/standalone/src"
@@ -60,8 +60,7 @@ def project(path, sources=SOURCES, extra=""):
 @pytest.fixture(scope="module")
 def model(tmp_path_factory):
     cache = tmp_path_factory.mktemp("model")
-    path, fingerprint = extract([SOURCES], [], cache)
-    return read_model(path), path, fingerprint
+    return extract([SOURCES], [], cache)
 
 
 @pytest.fixture(scope="module")
@@ -191,10 +190,10 @@ def test_deterministic_extraction_and_cache(model, tmp_path):
     _, original, _ = model
     copied = tmp_path / "source with spaces"
     shutil.copytree(SOURCES, copied)
-    second, key = extract([copied], [], tmp_path / "cache")
+    _, second, key = extract([copied], [], tmp_path / "cache")
     assert original.read_bytes() == second.read_bytes()
     mtime = second.stat().st_mtime_ns
-    assert extract([copied], [], tmp_path / "cache") == (second, key)
+    assert extract([copied], [], tmp_path / "cache")[1:] == (second, key)
     assert second.stat().st_mtime_ns == mtime
     source = copied / "demo/Widget.java"
     times = source.stat()
@@ -204,9 +203,9 @@ def test_deterministic_extraction_and_cache(model, tmp_path):
         )
     )
     os.utime(source, ns=(times.st_atime_ns, times.st_mtime_ns))
-    changed, newkey = extract([copied], [], tmp_path / "cache")
+    _, changed, newkey = extract([copied], [], tmp_path / "cache")
     assert newkey != key and b"to prose" in changed.read_bytes()
-    _, releasekey = extract([copied], [], tmp_path / "cache", release="17")
+    releasekey = extract([copied], [], tmp_path / "cache", release="17").fingerprint
     assert releasekey != newkey
     assert str(tmp_path).encode() not in changed.read_bytes()
 
@@ -257,14 +256,14 @@ def test_dependency_classpath_and_invalidation(tmp_path):
     )
     with pytest.raises(ExtensionError, match="compile classpath"):
         extract([source], [], tmp_path / "missing")
-    path, key = extract([source], [dependency], tmp_path / "cache")
-    assert read_model(path).find("type/doc/part/link").get("target") == "vendor.Token"
+    root, _, key = extract([source], [dependency], tmp_path / "cache")
+    assert root.find("type/doc/part/link").get("target") == "vendor.Token"
     cls = dependency / "vendor/Token.class"
     before = cls.stat()
     src.write_text("package vendor; public class Token { public int value; }")
     run(["javac", "-d", str(dependency), str(src)])
     os.utime(cls, ns=(before.st_atime_ns, before.st_mtime_ns))
-    _, changed = extract([source], [dependency], tmp_path / "cache")
+    changed = extract([source], [dependency], tmp_path / "cache").fingerprint
     assert changed != key
 
 
@@ -277,8 +276,8 @@ def test_diagnostics_and_strict_cli(tmp_path):
 public class Bad {
     /** {@inheritDoc} */ public void missing() {}
 }""")
-    path, _ = extract([source], [], tmp_path / "cache")
-    messages = "\n".join(n.text for n in read_model(path).findall("diagnostic"))
+    root = extract([source], [], tmp_path / "cache").root
+    messages = "\n".join(n.text for n in root.findall("diagnostic"))
     assert "Unresolved Javadoc reference DoesNotExist" in messages
     assert "Unsupported snippet" in messages
     assert "Cannot resolve inheritDoc" in messages
@@ -306,7 +305,7 @@ public class Bad {
 def test_markdown_diagnostic(tmp_path):
     source = tmp_path / "Markdown.java"
     source.write_text("/// A **Markdown** comment.\npublic class Markdown {}\n")
-    path, _ = extract([source], [], tmp_path / "cache")
+    path = extract([source], [], tmp_path / "cache").path
     assert "Markdown documentation comments are not supported" in path.read_text()
 
 
@@ -336,11 +335,11 @@ def test_visibility_selection_and_duplicate_excerpt(tmp_path):
 def test_read_model_and_safe_generation(model, tmp_path):
     root, _, _ = model
     out = tmp_path / "api"
-    generate_pages(root, out, "public")
+    publish_pages(out, plan_pages(root, "public"))
     edited = out / "index.rst"
     edited.write_text(edited.read_text() + "My handwritten guide\n")
     with pytest.raises(ExtensionError, match="refusing to overwrite"):
-        generate_pages(root, out, "public")
+        publish_pages(out, plan_pages(root, "public"))
     assert "My handwritten guide" in edited.read_text()
     for content in (
         '<api schema="999"/>',
@@ -359,8 +358,8 @@ def test_read_model_and_safe_generation(model, tmp_path):
 
 @pytest.mark.parametrize("release", ["17", "21", "25"])
 def test_source_release_levels(tmp_path, release):
-    path, _ = extract([SOURCES], [], tmp_path / "cache", release=release)
-    assert element(read_model(path), "demo.Point").get("kind") == "record"
+    root = extract([SOURCES], [], tmp_path / "cache", release=release).root
+    assert element(root, "demo.Point").get("kind") == "record"
 
 
 def test_text_builder(site, tmp_path):
@@ -391,8 +390,7 @@ public class Child extends Base implements Contract {
     /** {@inheritDoc} */
     public String value() { return ""; }
 }""")
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     child = element(root, "inherit.Child#value()")
     assert "From superclass." in "".join(child.itertext())
     assert "superclass result" in "".join(child.itertext())
@@ -406,8 +404,7 @@ public class Child extends Base implements Contract {
         )
         .replace("{@inheritDoc}", "{@inheritDoc Contract}")
     )
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert "From interface." in "".join(
         element(root, "inherit.Child#value()").itertext()
     )
@@ -421,8 +418,8 @@ def test_binary_ancestor_docs_warn_and_malformed_comments(tmp_path):
     @Override public String toString() { return ""; }
     /** Malformed {@link } */ public void bad() {}
 }""")
-    path, _ = extract([source], [], tmp_path / "cache")
-    messages = "\n".join(d.text for d in read_model(path).findall("diagnostic"))
+    root = extract([source], [], tmp_path / "cache").root
+    messages = "\n".join(d.text for d in root.findall("diagnostic"))
     assert "Cannot resolve inheritDoc" in messages
     assert "Malformed Javadoc" in messages
 
@@ -435,8 +432,8 @@ def test_concurrent_cache_publication(tmp_path):
             pool.submit(extract, [SOURCES], [], tmp_path / "cache") for _ in range(2)
         ]
         first, second = [future.result() for future in futures]
-    assert first == second
-    assert read_model(first[0]).find("type") is not None
+    assert first[1:] == second[1:]
+    assert first.root.find("type") is not None
 
 
 def test_preextracted_model_requires_no_jdk(model, tmp_path):
@@ -478,8 +475,8 @@ public class Dangerous {
     static { if (System.currentTimeMillis() > 0) throw new AssertionError("Executed application code"); }
     public Dangerous() { throw new AssertionError("Executed constructor"); }
 }""")
-    path, _ = extract([source], [], tmp_path / "cache")
-    assert element(read_model(path), "Dangerous").get("kind") == "class"
+    root = extract([source], [], tmp_path / "cache").root
+    assert element(root, "Dangerous").get("kind") == "class"
 
 
 def test_javadoc_fragments_match_standard_doclet(tmp_path):
@@ -500,11 +497,11 @@ public class Generic<T> {
      */
     public <U extends Number> void arrays(U[] values) {}
 }""")
-    path, _ = extract([source], [], tmp_path / "cache")
+    root = extract([source], [], tmp_path / "cache").root
     standard = tmp_path / "standard"
     run(["javadoc", "-quiet", "-d", str(standard), str(source)])
     page = html.unescape((standard / "fragments/Generic.html").read_text())
-    links = read_model(path).findall("type/doc/part/link")
+    links = root.findall("type/doc/part/link")
     assert len(links) == 3
     for link in links:
         assert f'id="{link.get("fragment")}"' in page
@@ -535,10 +532,8 @@ def test_jar_dependency(tmp_path):
     source.write_text(
         "/** A dependency reference: {@link vendor.Token}. */ public class Use { public vendor.Token token; }"
     )
-    path, _ = extract([source], [jar], tmp_path / "cache")
-    assert (
-        read_model(path).find("type/doc/part/link").get("path") == "vendor/Token.html"
-    )
+    root = extract([source], [jar], tmp_path / "cache").root
+    assert root.find("type/doc/part/link").get("path") == "vendor/Token.html"
 
 
 def test_type_annotations_do_not_change_identity(tmp_path):
@@ -552,8 +547,8 @@ public class Annotated {
      */
     public void accept(@Flag String value) {}
 }""")
-    path, _ = extract([source], [], tmp_path / "cache")
-    member = element(read_model(path), "Annotated#accept(java.lang.String)")
+    root = extract([source], [], tmp_path / "cache").root
+    member = element(root, "Annotated#accept(java.lang.String)")
     assert "@Flag" in signature(member)
 
 
@@ -577,8 +572,8 @@ public class Trap extends AbstractProcessor {
     service.write_text("Trap\n")
     source = tmp_path / "Application.java"
     source.write_text("/** An application. */ @Deprecated public class Application {}")
-    path, _ = extract([source], [classes], tmp_path / "cache")
-    assert element(read_model(path), "Application").get("kind") == "class"
+    root = extract([source], [classes], tmp_path / "cache").root
+    assert element(root, "Application").get("kind") == "class"
 
 
 def test_manual_external_role_preserves_varargs(tmp_path):
@@ -636,8 +631,8 @@ def test_html_attribute_entities_are_decoded_once(tmp_path):
         '/** <a href="https://example.test/?a=1&amp;b=2&#38;c=3&amp;amp;d=4">Query</a>. */ '
         "public class Links {}"
     )
-    path, _ = extract([source], [], tmp_path / "cache")
-    href = read_model(path).find("type/doc/part/start/attr")
+    root = extract([source], [], tmp_path / "cache").root
+    href = root.find("type/doc/part/start/attr")
     assert href.text == "https://example.test/?a=1&b=2&c=3&amp;d=4"
 
 
@@ -668,8 +663,7 @@ public class Child implements Contract {{
     public void validate(int renamed) throws IllegalArgumentException {{}}
 }}
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     doc = element(root, "Child#validate(int)").find("doc")
     text = "".join(doc.itertext())
@@ -685,17 +679,12 @@ def test_public_visibility_accounts_for_enclosing_types(tmp_path):
     }
 }
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root, path, _ = extract([source], [], tmp_path / "cache")
     nested = element(root, "Outer.Extension.Nested")
     assert nested.get("visibility") == "protected"
     assert signature(nested).startswith("public static class")
-    public = tmp_path / "public"
-    generate_pages(root, public, "public")
-    assert not (public / "type-Outer.Extension.Nested.rst").exists()
-    protected = tmp_path / "protected"
-    generate_pages(root, protected, "protected")
-    assert (protected / "type-Outer.Extension.Nested.rst").exists()
+    assert "type-Outer.Extension.Nested.rst" not in plan_pages(root, "public")
+    assert "type-Outer.Extension.Nested.rst" in plan_pages(root, "protected")
     docs = tmp_path / "docs"
     docs.mkdir()
     (docs / "conf.py").write_text(
@@ -762,8 +751,7 @@ def test_xml_invalid_characters_are_preserved_as_unicode_escapes(tmp_path):
         ' <a href="https://example.test/\\u0001">links</a> keep it. */\n'
         "public class Controls {}\n"
     )
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     part = element(root, "Controls").find("doc/part[@kind='body']")
     assert part.find("code").text == "\\u0000"
@@ -777,15 +765,14 @@ def test_model_extractor_version_comes_from_the_package(tmp_path, monkeypatch):
     monkeypatch.setattr(extractor, "VERSION", "9.9.9")
     source = tmp_path / "Versioned.java"
     source.write_text("/** Versioned. */ public class Versioned {}\n")
-    path, _ = extractor.extract([source], [], tmp_path / "cache")
-    assert read_model(path).get("extractor") == "9.9.9"
+    root = extractor.extract([source], [], tmp_path / "cache").root
+    assert root.get("extractor") == "9.9.9"
 
 
 def test_valueless_html_attributes_do_not_abort_extraction(tmp_path):
     source = tmp_path / "Compact.java"
     source.write_text("/** <ul compact><li>one</li></ul> */\npublic class Compact {}\n")
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     start = element(root, "Compact").find("doc/part/start[@name='ul']")
     assert start.find("attr").get("name") == "compact"
     assert not start.find("attr").text
