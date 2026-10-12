@@ -195,11 +195,17 @@ def test_linkcode_links_declarations_to_source_lines(model, tmp_path):
     )
     out = tmp_path / "html"
     build(docs, out)
+    lines = (SOURCES / "demo/Widget.java").read_text().splitlines()
+
+    def link(declaration):
+        line = next(i for i, text in enumerate(lines, 1) if declaration in text)
+        return f'href="https://src.test/demo/Widget.java#L{line}"'
+
     widget = (out / "api/type-demo.Widget.html").read_text()
-    for line in (34, 56):
-        assert f'href="https://src.test/demo/Widget.java#L{line}"' in widget
+    assert link("public class Widget") in widget
+    assert link("public String convert(int number)") in widget
     nested = (out / "api/type-demo.Widget.Nested.html").read_text()
-    assert 'href="https://src.test/demo/Widget.java#L76"' in nested
+    assert link("public static class Nested") in nested
     assert "viewcode-link" in nested
 
 

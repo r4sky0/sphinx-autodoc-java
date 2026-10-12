@@ -46,9 +46,10 @@ dependencies.
    alternatives
 
 .. toctree::
-   :caption: Live example
+   :caption: Live examples
    :maxdepth: 1
 
+   gallery/index
    showcase
 
 .. toctree::

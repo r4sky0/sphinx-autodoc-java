@@ -15,13 +15,26 @@ THEMES = {
 
 project = "Commons Lang"
 release = showcase["version"]
-extensions = ["sphinx_java_autodoc"]
+extensions = ["sphinx_java_autodoc", "sphinx.ext.linkcode"]
 java_sources = ["../upstream/src/main/java"]
 java_release = "17"
 java_generate = "api"
 java_external_javadoc = {
     "java": "https://docs.oracle.com/en/java/javase/25/docs/api/{module}/",
 }
+
+
+def linkcode_resolve(domain, info):
+    # Links name the pinned commit, so they keep pointing at the documented lines.
+    if domain == "java" and info["line"]:
+        repository = showcase["repository"].removesuffix(".git")
+        return (
+            f"{repository}/blob/{showcase['commit']}/src/main/java/"
+            f"{info['source']}#L{info['line']}"
+        )
+    return None
+
+
 html_theme = THEMES[theme]
 html_title = f"Commons Lang {showcase['version']}"
 html_baseurl = f"{showcase['site']}{theme}/"

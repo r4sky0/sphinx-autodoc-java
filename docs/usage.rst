@@ -132,6 +132,8 @@ the package. Set ``java_generate`` to generate its package index and type pages
 automatically. Generated pages are owned through a content-hash manifest. Edited or
 unowned files are never overwritten; put handwritten material outside that directory.
 
+.. _source-links:
+
 Source links
 ------------
 

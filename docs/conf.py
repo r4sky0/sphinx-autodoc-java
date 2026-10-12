@@ -5,7 +5,23 @@ from pathlib import Path
 
 project = "Java autodoc"
 release = distribution_version("sphinx-java-autodoc")
-extensions = ["sphinx_java_autodoc", "sphinx.ext.intersphinx"]
+extensions = ["sphinx_java_autodoc", "sphinx.ext.intersphinx", "sphinx.ext.linkcode"]
+
+# The feature gallery documents the fixture API that the tests and browser checks use.
+java_sources = ["../examples/standalone/src"]
+java_generate = "gallery/api"
+
+
+def linkcode_resolve(domain, info):
+    # shortcut: links follow main, so a pull request preview may point at older lines;
+    # pass the built commit in if previews need exact lines.
+    if domain == "java" and info["line"]:
+        return (
+            "https://github.com/r4sky0/sphinx-java-autodoc/blob/main/"
+            f"examples/standalone/src/{info['source']}#L{info['line']}"
+        )
+    return None
+
 
 # The Java API shown here is the Commons Lang showcase, published next to these docs
 # at showcase/commons-lang/<theme>/; guides link to the Furo version. Its inventory

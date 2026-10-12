@@ -26,7 +26,8 @@ import java.util.Map;
  * <caption>Conversion examples</caption>
  * <tr><th>Call</th><th>Result</th><th>Notes</th></tr>
  * <tr><td>{@code widget.convert(42)}</td><td>{@code "42"}</td>
- * <td>Labelled {@value #LABEL}; wide_cells_scroll_inside_the_table_instead_of_the_page</td></tr>
+ * <td>Labelled {@value #LABEL}; long names such as
+ * {@code com.example.widgets.configuration.DefaultWidgetLabelProvider} stay inside the table</td></tr>
  * </table>
  * @see Point
  * @since 1.0
