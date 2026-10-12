@@ -123,6 +123,20 @@ def test_semantic_extraction(model):
         inherited.find("doc/part[@kind='throws']").itertext()
     )
     assert inherited.find("doc/part/link").get("target") == "demo.Widget#convert(int)"
+    twice = element(root, "demo.Transformer#twice(java.lang.Object)")
+    assert signature(twice).startswith("public default T twice")
+    assert [p.get("kind") for p in twice.findall("doc/part")] == [
+        "body",
+        "apiNote",
+        "implSpec",
+        "implNote",
+        "param",
+        "return",
+    ]
+    assert (
+        twice.find("doc/part[@kind='implSpec']/link").get("target")
+        == "demo.Transformer#convert(java.lang.Object)"
+    )
 
 
 def test_html_links_structure_inventory_search(site):
@@ -153,6 +167,10 @@ def test_html_links_structure_inventory_search(site):
     assert "the text overload" in html
     assert "Deprecated" in html and "Since" in html
     assert "Constructors" in html and "Fields and constants" in html
+    transformer = (out / "api/type-demo.Transformer.html").read_text()
+    for title in ("API Note", "Implementation Requirements", "Implementation Note"):
+        assert title in transformer
+    assert "Example Author" not in transformer
     with (out / "objects.inv").open("rb") as stream:
         inventory = InventoryFile.load(stream, "", lambda base, uri: uri)
     assert "demo.Widget" in inventory["java:type"]
@@ -307,6 +325,16 @@ def test_markdown_diagnostic(tmp_path):
     source.write_text("/// A **Markdown** comment.\npublic class Markdown {}\n")
     path = extract([source], [], tmp_path / "cache").path
     assert "Markdown documentation comments are not supported" in path.read_text()
+
+
+def test_unknown_block_tags_still_warn(tmp_path):
+    source = tmp_path / "Todo.java"
+    source.write_text(
+        "/** Text.\n * @todo finish\n * @author A\n */\npublic class Todo {}\n"
+    )
+    (diagnostic,) = extract([source], [], tmp_path / "cache").root.findall("diagnostic")
+    assert "Unsupported block tag UNKNOWN_BLOCK_TAG" in diagnostic.text
+    assert "AUTHOR" not in diagnostic.text
 
 
 def test_unresolved_and_ambiguous_sphinx_roles(site, tmp_path):

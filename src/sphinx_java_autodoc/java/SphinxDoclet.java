@@ -22,6 +22,17 @@ import jdk.javadoc.doclet.*;
 /** Extracts source declarations and semantic documentation using public JDK APIs. */
 public final class SphinxDoclet implements Doclet {
   private static final String THROWS = "throws:";
+  // JDK-style notes, as named by the JDK's own -tag options.
+  private static final Set<String> NOTES = Set.of("apiNote", "implSpec", "implNote");
+  // The standard doclet omits these without -author, -version or a serialized-form page.
+  private static final Set<DocTree.Kind> OMITTED =
+      EnumSet.of(
+          DocTree.Kind.HIDDEN,
+          DocTree.Kind.AUTHOR,
+          DocTree.Kind.VERSION,
+          DocTree.Kind.SERIAL,
+          DocTree.Kind.SERIAL_DATA,
+          DocTree.Kind.SERIAL_FIELD);
   // shortcut: conservatively detect markup comments; replace with a markup parser when
   // supporting regions/actions.
   private static final Pattern SNIPPET_MARKUP =
@@ -525,6 +536,7 @@ public final class SphinxDoclet implements Doclet {
       }
     }
     int see = 0;
+    int note = 0;
     for (var tag : comment.getBlockTags()) {
       switch (tag) {
         case ParamTree param -> putParam(result, e, param);
@@ -533,8 +545,10 @@ public final class SphinxDoclet implements Doclet {
         case SeeTree s -> result.put("see:" + see++, new Part(e, "", s.getReference()));
         case SinceTree since -> result.put("since", new Part(e, "", since.getBody()));
         case DeprecatedTree d -> result.put("deprecated", new Part(e, "", d.getBody()));
+        case UnknownBlockTagTree custom when NOTES.contains(custom.getTagName()) ->
+            result.put(custom.getTagName() + ":" + note++, new Part(e, "", custom.getContent()));
         default -> {
-          if (tag.getKind() != DocTree.Kind.HIDDEN) {
+          if (!OMITTED.contains(tag.getKind())) {
             warn(e, "Unsupported block tag %s; retain it in handwritten guides.", tag.getKind());
           }
         }
