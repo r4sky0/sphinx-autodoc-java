@@ -33,8 +33,7 @@ html_static_path = []
 showcase = json.loads(
     (Path(__file__).parents[1] / "showcase/commons-lang/showcase.json").read_text()
 )
-# Every theme reports the same warnings; the baseline records them per theme.
-warnings = showcase["warnings"]["furo"]
+warnings = showcase["warnings"]
 rst_epilog = "\n".join(
     [
         f".. |showcase-version| replace:: {showcase['version']}",

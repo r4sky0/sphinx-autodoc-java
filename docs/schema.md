@@ -2,30 +2,30 @@
 
 The process boundary is UTF-8 XML, rooted at `<api schema="1" extractor="0.1.0">`.
 Unknown schema versions, malformed XML, DTD/entity declarations, duplicate IDs and
-missing required declaration attributes are rejected. Declaration kinds, nonempty
+missing required declaration attributes or `sig` are rejected. Declaration kinds, nonempty
 names/signatures, package membership, and member IDs belonging to their enclosing
 type are validated before rendering. This tightens schema 1 validation without
 changing valid model structure. The file is generated input,
 not a general XML document interchange service. No external entities are fetched.
 
 - `package`: `name`, followed by `doc`.
-- `type`: required `id`, `name`, `kind`, `package`, `signature`, `visibility`;
-  contains `doc` then zero or more `member` elements.
+- `type`: required `id`, `name`, `kind`, `package`, `visibility`;
+  contains `sig`, `doc`, then zero or more `member` elements.
   Visibility includes enclosing declarations: a public nested type inside a
   protected type has `visibility="protected"`; its signature retains `public`.
-- `member`: same attributes. Kinds include `constructor`, `method`, `field`,
+- `member`: same attributes and `sig`. Kinds include `constructor`, `method`, `field`,
   `enum_constant`, `record_component`. Types include `class`, `interface`, `enum`, `record`,
   `annotation_type`.
-- `sig` (optional child of `type` and `member`): the declaration as signature tokens,
+- `sig` (required child of `type` and `member`): the declaration as signature tokens,
   so renderers can link types and build native signature nodes. Tags: `k` keyword
   or modifier, `kt` primitive type or `void`, `t` punctuation or spaces, `q` package
   qualifier, `n` declared name, `tv` type variable, `pname` parameter name, `v` constant
   or default value, `r` type reference, and `params` containing one `param` per
   parameter or record component. `r` carries `target` (canonical ID) and the external
   Javadoc `path`, `module` and `fragment`; its text is the nested simple name.
-  Readers reject unknown tokens and malformed `r` targets. Renderers without `sig`
-  support use `signature`, which remains required, so schema
-  1 still applies.
+  Readers reject unknown tokens and malformed `r` targets. The plain `signature`
+  attribute of earlier development models was dropped before the first release;
+  regenerate such models.
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
   `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.

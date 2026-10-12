@@ -18,7 +18,7 @@ The docs link into the Apache Commons Lang showcase, so build it first:
 `showcase/build.py` fetches the pinned commit, builds its site under
 `build/showcase/commons-lang/html/<theme>/` in Furo, Read the Docs, PyData and
 Lumina (the `showcase` dependency group), and fails when a theme's warning category
-exceeds its baseline in `showcase/commons-lang/showcase.json`. After a change that removes
+exceeds the shared baseline in `showcase/commons-lang/showcase.json`. After a change that removes
 warnings, record the new counts with `--update-baseline`; an increase needs a
 deliberate baseline update in the same change.
 

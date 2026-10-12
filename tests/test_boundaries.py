@@ -22,9 +22,9 @@ def model(*names):
             kind="class",
             package="demo",
             visibility="public",
-            signature=f"class {name}",
         )
-        ET.SubElement(
+        ET.SubElement(ET.SubElement(declaration, "sig"), "n").text = name
+        member = ET.SubElement(
             declaration,
             "member",
             id=f"demo.{name}#run()",
@@ -32,8 +32,8 @@ def model(*names):
             kind="method",
             package="demo",
             visibility="public",
-            signature="void run()",
         )
+        ET.SubElement(ET.SubElement(member, "sig"), "n").text = "run"
     return root
 
 
@@ -48,7 +48,6 @@ def model(*names):
         ("type", "id", "other.A"),
         ("type", "name", "Other"),
         ("type", "kind", "method"),
-        ("type", "signature", ""),
     ],
 )
 def test_model_rejects_invalid_declaration_contract(tmp_path, tag, key, value):
@@ -58,6 +57,20 @@ def test_model_rejects_invalid_declaration_contract(tmp_path, tag, key, value):
     path.write_bytes(ET.tostring(root))
     with pytest.raises(ExtensionError, match="invalid model"):
         read_model(path)
+
+
+@pytest.mark.parametrize("tag", ["type", "type/member"])
+def test_model_rejects_missing_or_empty_signature(tmp_path, tag):
+    path = tmp_path / "api.xml"
+    for message, change in (
+        ("missing sig", lambda node: node.remove(node.find("sig"))),
+        ("empty declaration name or signature", lambda node: node.find("sig").clear()),
+    ):
+        root = model("A")
+        change(root.find(tag))
+        path.write_bytes(ET.tostring(root))
+        with pytest.raises(ExtensionError, match=message):
+            read_model(path)
 
 
 @pytest.mark.parametrize("failure", range(1, 6))

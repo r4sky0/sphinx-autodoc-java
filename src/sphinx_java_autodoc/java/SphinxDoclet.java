@@ -222,10 +222,6 @@ public final class SphinxDoclet implements Doclet {
     warnings.add(id(owner) + ": " + (args.length == 0 ? template : template.formatted(args)));
   }
 
-  private static String join(Collection<?> values) {
-    return values.stream().map(Object::toString).collect(Collectors.joining(", "));
-  }
-
   // Declarations and signatures
 
   private String id(Element e) {
@@ -253,104 +249,6 @@ public final class SphinxDoclet implements Doclet {
               ? type.getKind().name().toLowerCase(Locale.ROOT)
               : type.toString();
     };
-  }
-
-  private static String typeParameters(List<? extends TypeParameterElement> parameters) {
-    if (parameters.isEmpty()) {
-      return "";
-    }
-    return parameters.stream()
-        .map(SphinxDoclet::typeParameter)
-        .collect(Collectors.joining(", ", "<", ">"));
-  }
-
-  private static String typeParameter(TypeParameterElement parameter) {
-    var bounds = parameter.getBounds();
-    if (bounds.size() == 1 && bounds.getFirst().toString().equals("java.lang.Object")) {
-      return parameter.getSimpleName().toString();
-    }
-    return parameter.getSimpleName()
-        + " extends "
-        + bounds.stream().map(Object::toString).collect(Collectors.joining(" & "));
-  }
-
-  private static String annotations(Element e) {
-    return e.getAnnotationMirrors().stream().map(a -> a + " ").collect(Collectors.joining());
-  }
-
-  private String signature(Element e) {
-    String modifiers = e.getModifiers().stream().map(m -> m + " ").collect(Collectors.joining());
-    String prefix = annotations(e) + modifiers;
-    return switch (e) {
-      case TypeElement type -> prefix + typeSignature(type);
-      case ExecutableElement method -> prefix + methodSignature(method);
-      case VariableElement variable -> prefix + variableSignature(variable);
-      default -> throw new IllegalArgumentException("Unexpected declaration " + e);
-    };
-  }
-
-  private static String typeSignature(TypeElement type) {
-    var kind = type.getKind();
-    var s = new StringBuilder();
-    s.append(
-        kind == ElementKind.ANNOTATION_TYPE ? "@interface" : kind.name().toLowerCase(Locale.ROOT));
-    s.append(' ').append(type.getQualifiedName()).append(typeParameters(type.getTypeParameters()));
-    if (kind == ElementKind.RECORD) {
-      s.append(
-          type.getRecordComponents().stream()
-              .map(c -> annotations(c) + c.asType() + " " + c.getSimpleName())
-              .collect(Collectors.joining(", ", "(", ")")));
-    }
-    var superclass = type.getSuperclass();
-    if (kind == ElementKind.CLASS
-        && superclass.getKind() != TypeKind.NONE
-        && !superclass.toString().equals("java.lang.Object")) {
-      s.append(" extends ").append(superclass);
-    }
-    if (!type.getInterfaces().isEmpty()) {
-      s.append(kind.isInterface() ? " extends " : " implements ");
-      s.append(join(type.getInterfaces()));
-    }
-    if (!type.getPermittedSubclasses().isEmpty()) {
-      s.append(" permits ").append(join(type.getPermittedSubclasses()));
-    }
-    return s.toString();
-  }
-
-  private static String methodSignature(ExecutableElement method) {
-    var s = new StringBuilder();
-    if (!method.getTypeParameters().isEmpty()) {
-      s.append(typeParameters(method.getTypeParameters())).append(' ');
-    }
-    if (method.getKind() == ElementKind.CONSTRUCTOR) {
-      s.append(method.getEnclosingElement().getSimpleName());
-    } else {
-      s.append(method.getReturnType()).append(' ').append(method.getSimpleName());
-    }
-    var parameters = method.getParameters();
-    var rendered = new ArrayList<String>();
-    for (int i = 0; i < parameters.size(); i++) {
-      var parameter = parameters.get(i);
-      String type = parameter.asType().toString();
-      if (method.isVarArgs() && i == parameters.size() - 1) {
-        type = type.substring(0, type.length() - 2) + "...";
-      }
-      rendered.add(annotations(parameter) + type + " " + parameter.getSimpleName());
-    }
-    s.append('(').append(String.join(", ", rendered)).append(')');
-    if (!method.getThrownTypes().isEmpty()) {
-      s.append(" throws ").append(join(method.getThrownTypes()));
-    }
-    if (method.getDefaultValue() != null) {
-      s.append(" default ").append(method.getDefaultValue());
-    }
-    return s.toString();
-  }
-
-  private String variableSignature(VariableElement variable) {
-    var value = variable.getConstantValue();
-    String constant = value == null ? "" : " = " + elements.getConstantExpression(value);
-    return variable.asType() + " " + variable.getSimpleName() + constant;
   }
 
   // Structured signatures: the same declaration as tokens, so renderers can link types and
@@ -594,8 +492,7 @@ public final class SphinxDoclet implements Doclet {
             .set("name", e.getSimpleName().toString())
             .set("kind", e.getKind().name().toLowerCase(Locale.ROOT))
             .set("visibility", visible(e, true) ? "public" : "protected")
-            .set("package", elements.getPackageOf(e).getQualifiedName().toString())
-            .set("signature", signature(e));
+            .set("package", elements.getPackageOf(e).getQualifiedName().toString());
     sig(node, e);
     documentation(node, e);
     return node;

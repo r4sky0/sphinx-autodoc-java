@@ -77,9 +77,11 @@ def read_model(path: Path) -> ET.Element:
         owners = {id(m): t for t in root.findall("type") for m in t.findall("member")}
         ids = set()
         for node in root.findall("type") + root.findall("type/member"):
-            for key in ("id", "name", "kind", "visibility", "package", "signature"):
+            for key in ("id", "name", "kind", "visibility", "package"):
                 if key not in node.attrib:
                     raise ValueError(f"{node.tag} is missing {key}")
+            if node.find("sig") is None:
+                raise ValueError(f"{node.tag} is missing sig")
             if node.attrib["id"] in ids:
                 raise ValueError(f"duplicate symbol {node.attrib['id']}")
             ids.add(node.attrib["id"])
@@ -88,7 +90,7 @@ def read_model(path: Path) -> ET.Element:
             symbol, name, kind, package = (
                 node.get(key) for key in ("id", "name", "kind", "package")
             )
-            if not name or not node.get("signature").strip():
+            if not name or not "".join(node.find("sig").itertext()).strip():
                 raise ValueError("empty declaration name or signature")
             if package not in packages:
                 raise ValueError(f"undeclared package {package!r} for {symbol}")
@@ -328,13 +330,18 @@ def extract(
         root.set("extractor", VERSION)
         if diagnostics.strip():
             # Compiler warnings must remain visible on cache hits too.
-            message = diagnostics.strip().replace(str(work), "<extract>")
-            for index, source in enumerate(roots):
-                message = message.replace(str(source), f"<source:{index}>")
-            for index, source in enumerate(lookup):
-                message = message.replace(str(source), f"<sourcepath:{index}>")
-            for index, entry in enumerate(dependencies):
-                message = message.replace(str(entry), f"<classpath:{index}>")
+            labels = {str(work): "<extract>"}
+            for name, paths in (
+                ("source", roots),
+                ("sourcepath", lookup),
+                ("classpath", dependencies),
+            ):
+                for index, path in enumerate(paths):
+                    labels.setdefault(str(path), f"<{name}:{index}>")
+            message = diagnostics.strip()
+            # Longest first, so a root like src does not relabel part of src-gen.
+            for path in sorted(labels, key=len, reverse=True):
+                message = message.replace(path, labels[path])
             ET.SubElement(root, "diagnostic").text = message
         atomic_write(
             destination, ET.tostring(root, encoding="utf-8", xml_declaration=True)

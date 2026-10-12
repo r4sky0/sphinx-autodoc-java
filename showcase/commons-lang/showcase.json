@@ -14,41 +14,12 @@
     "lumina": "Lumina"
   },
   "warnings": {
-    "furo": {
-      "java.extract": 106,
-      "java.html": 31,
-      "misc.highlighting_failure": 20,
-      "ref.field": 2,
-      "ref.method": 1,
-      "ref.obj": 11,
-      "ref.type": 1
-    },
-    "rtd": {
-      "java.extract": 106,
-      "java.html": 31,
-      "misc.highlighting_failure": 20,
-      "ref.field": 2,
-      "ref.method": 1,
-      "ref.obj": 11,
-      "ref.type": 1
-    },
-    "pydata": {
-      "java.extract": 106,
-      "java.html": 31,
-      "misc.highlighting_failure": 20,
-      "ref.field": 2,
-      "ref.method": 1,
-      "ref.obj": 11,
-      "ref.type": 1
-    },
-    "lumina": {
-      "java.extract": 106,
-      "java.html": 31,
-      "misc.highlighting_failure": 20,
-      "ref.field": 2,
-      "ref.method": 1,
-      "ref.obj": 11,
-      "ref.type": 1
-    }
+    "java.extract": 106,
+    "java.html": 31,
+    "misc.highlighting_failure": 20,
+    "ref.field": 2,
+    "ref.method": 1,
+    "ref.obj": 11,
+    "ref.type": 1
   }
 }

@@ -77,6 +77,11 @@ def element(root, symbol):
     return next(n for n in root.iter() if n.get("id") == symbol)
 
 
+def signature(element):
+    """The signature tokens' text, without the model's indentation between them."""
+    return "".join(t.text or "" for t in element.find("sig").iter() if not len(t))
+
+
 def test_semantic_extraction(model):
     root, _, _ = model
     assert not root.findall("diagnostic")
@@ -88,24 +93,17 @@ def test_semantic_extraction(model):
         "annotation_type",
     }
     assert element(root, "demo.Widget.Nested").get("kind") == "class"
-    assert (
-        element(root, "demo.Widget#combine(int[][],java.lang.String[])")
-        .get("signature")
-        .endswith("combine(int[][] values, java.lang.String... labels)")
+    combine = element(root, "demo.Widget#combine(int[][],java.lang.String[])")
+    assert signature(combine).endswith("combineint[][] valuesString... labels")
+    generic = signature(
+        element(root, "demo.Widget#buildIndex(java.util.List,java.util.Map)")
     )
-    generic = element(root, "demo.Widget#buildIndex(java.util.List,java.util.Map)")
-    assert "<T extends java.lang.Number & java.lang.Comparable<T>>" in generic.get(
-        "signature"
+    assert "<T extends Number & Comparable<T>>" in generic
+    assert "? extends CharSequence" in generic
+    assert '@Deprecated(since="1.0", forRemoval=true)' in signature(
+        element(root, "demo.Widget#old()")
     )
-    assert "? extends java.lang.CharSequence" in generic.get("signature")
-    assert '@java.lang.Deprecated(since="1.0", forRemoval=true)' in element(
-        root, "demo.Widget#old()"
-    ).get("signature")
-    assert (
-        element(root, "demo.Label#value()")
-        .get("signature")
-        .endswith('default "default"')
-    )
+    assert signature(element(root, "demo.Label#value()")).endswith('default "default"')
     assert element(root, "demo.Mode#FAST").get("kind") == "enum_constant"
     assert (
         element(root, "demo.Widget#<init>(java.lang.String)").get("kind")
@@ -234,6 +232,7 @@ def test_incremental_sphinx_source_add_remove_and_content(tmp_path):
         "A newly changed description."
         in (output / "api/type-demo.Widget.html").read_text()
     )
+    assert len(list((output / ".doctrees/java-cache").glob("*.xml"))) == 1
     extra = copied / "demo/NewType.java"
     extra.write_text("package demo; /** Added later. */ public class NewType {}")
     build(docs, output)
@@ -555,7 +554,7 @@ public class Annotated {
 }""")
     path, _ = extract([source], [], tmp_path / "cache")
     member = element(read_model(path), "Annotated#accept(java.lang.String)")
-    assert "@Flag" in member.get("signature")
+    assert "@Flag" in signature(member)
 
 
 def test_annotation_processors_are_not_executed(tmp_path):
@@ -690,7 +689,7 @@ def test_public_visibility_accounts_for_enclosing_types(tmp_path):
     root = read_model(path)
     nested = element(root, "Outer.Extension.Nested")
     assert nested.get("visibility") == "protected"
-    assert nested.get("signature").startswith("public static class")
+    assert signature(nested).startswith("public static class")
     public = tmp_path / "public"
     generate_pages(root, public, "public")
     assert not (public / "type-Outer.Extension.Nested.rst").exists()

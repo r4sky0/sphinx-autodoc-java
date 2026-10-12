@@ -219,8 +219,9 @@ Generated skeletons are written only when changed. The ownership manifest record
 old and intended content hashes before page updates, so an interrupted generation
 can retry even if the Java model changes again. Edited pages still stop the build. Removed types leave the source
 toctree and inventory; Sphinx can retain old HTML files in an existing output directory,
-so publish from a clean output directory. Old content-addressed cache entries can be
-removed when no build is using the cache; no background cache eviction is performed.
+so publish from a clean output directory. After extracting, Sphinx deletes older
+models from ``<doctreedir>/java-cache``. The CLI never evicts entries from its
+``--cache`` directory; remove old ones when no extraction is using it.
 
 Direct doclet invocation
 ------------------------
