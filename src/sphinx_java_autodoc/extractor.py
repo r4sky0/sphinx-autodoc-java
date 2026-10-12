@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -17,6 +18,7 @@ from .model import Model, read_model
 
 VERSION = "0.2.1"  # x-release-please-version
 DOCLET = Path(__file__).parent / "java" / "SphinxDoclet.java"
+PACKAGE = re.compile(r"[^\W\d]\w*(?:\.[^\W\d]\w*)*")
 
 
 def run(arguments: list[str], *, cwd: Path | None = None) -> str:
@@ -67,11 +69,19 @@ def extract(
     jdk: str = "",
     release: str = "",
     sourcepath: list[Path] | None = None,
+    encoding: str = "UTF-8",
+    exclude_packages: list[str] | None = None,
 ) -> Model:
     """Returns the validated model, cached by a content hash of all inputs."""
     roots = [p.resolve() for p in sources]
     dependencies = [p.resolve() for p in classpath]
     lookup = [p.resolve() for p in sourcepath or []]
+    excluded = sorted(set(exclude_packages or []))
+    for name in excluded:
+        if not PACKAGE.fullmatch(name):
+            raise ExtensionError(
+                f"Java autodoc: excluded package is not a package name: {name!r}"
+            )
     for path in lookup:
         if not path.is_dir():
             raise ExtensionError(
@@ -147,6 +157,8 @@ def extract(
                 [str(p) for p in roots],
                 [str(p) for p in dependencies],
                 [str(p) for p in lookup],
+                encoding,
+                excluded,
             ]
         ).encode()
     )
@@ -192,7 +204,7 @@ def extract(
             "en_US",
             "-quiet",
             "-encoding",
-            "UTF-8",
+            encoding,
             "-protected",
             "-doclet",
             "sphinxjava.SphinxDoclet",
@@ -203,6 +215,8 @@ def extract(
         ]
         if release:
             args += ["--release", str(release)]
+        if excluded:
+            args += ["--sphinx-exclude", ",".join(excluded)]
         # An explicit empty classpath avoids implicitly reading classes from cwd.
         empty = work / "empty"
         empty.mkdir()

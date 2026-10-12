@@ -44,6 +44,8 @@ def prepare(app):
             jdk=config.java_jdk,
             release=str(config.java_release),
             sourcepath=[base / s for s in config.java_sourcepath],
+            encoding=config.java_encoding,
+            exclude_packages=config.java_exclude_packages,
         )
         # This cache belongs to one doctree directory, so only the current model is kept.
         for old in cache.glob("*.xml"):
@@ -89,6 +91,8 @@ def setup(app):
         "java_sources": [],
         "java_classpath": [],
         "java_sourcepath": [],
+        "java_encoding": "UTF-8",
+        "java_exclude_packages": [],
         "java_jdk": "",
         "java_release": "",
         "java_model": "",

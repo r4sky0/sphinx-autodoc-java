@@ -5,6 +5,7 @@ import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import java.nio.file.*;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
@@ -32,6 +33,7 @@ public final class SphinxDoclet implements Doclet {
   private Elements elements;
   private Types types;
   private Path output;
+  private List<String> excluded = List.of();
   private final Set<String> warnings = new TreeSet<>();
   private final Map<Element, Map<String, Part>> comments = new HashMap<>();
 
@@ -108,41 +110,54 @@ public final class SphinxDoclet implements Doclet {
     return SourceVersion.latestSupported();
   }
 
+  /** A doclet option taking one argument. */
+  private record Flag(String name, String parameters, String description, Consumer<String> action)
+      implements Option {
+    @Override
+    public int getArgumentCount() {
+      return 1;
+    }
+
+    @Override
+    public String getDescription() {
+      return description;
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.STANDARD;
+    }
+
+    @Override
+    public List<String> getNames() {
+      return List.of(name);
+    }
+
+    @Override
+    public String getParameters() {
+      return parameters;
+    }
+
+    @Override
+    public boolean process(String option, List<String> arguments) {
+      action.accept(arguments.getFirst());
+      return true;
+    }
+  }
+
   @Override
   public Set<? extends Option> getSupportedOptions() {
     return Set.of(
-        new Option() {
-          @Override
-          public int getArgumentCount() {
-            return 1;
-          }
-
-          @Override
-          public String getDescription() {
-            return "Write versioned Sphinx API XML";
-          }
-
-          @Override
-          public Kind getKind() {
-            return Kind.STANDARD;
-          }
-
-          @Override
-          public List<String> getNames() {
-            return List.of("--sphinx-output");
-          }
-
-          @Override
-          public String getParameters() {
-            return "file";
-          }
-
-          @Override
-          public boolean process(String name, List<String> arguments) {
-            output = Path.of(arguments.getFirst());
-            return true;
-          }
-        });
+        new Flag(
+            "--sphinx-output",
+            "file",
+            "Write versioned Sphinx API XML",
+            argument -> output = Path.of(argument)),
+        new Flag(
+            "--sphinx-exclude",
+            "packages",
+            "Comma-separated packages to omit, with their subpackages",
+            argument -> excluded = List.of(argument.split(","))));
   }
 
   @Override
@@ -164,6 +179,7 @@ public final class SphinxDoclet implements Doclet {
           env.getIncludedElements().stream()
               .filter(e -> e instanceof TypeElement && visible(e, false) && !hidden(e))
               .map(TypeElement.class::cast)
+              .filter(t -> !excluded(elements.getPackageOf(t).getQualifiedName().toString()))
               .sorted(Comparator.comparing(t -> t.getQualifiedName().toString()))
               .toList();
       var packages = new TreeMap<String, PackageElement>();
@@ -182,6 +198,13 @@ public final class SphinxDoclet implements Doclet {
             .sorted(Comparator.comparing(this::id))
             .forEach(member -> declaration(node, "member", member));
       }
+      for (var pkg : excluded) {
+        if (env.getIncludedElements().stream()
+            .noneMatch(
+                e -> excluded(pkg, elements.getPackageOf(e).getQualifiedName().toString()))) {
+          warnings.add("Excluded package %s matches no source package.".formatted(pkg));
+        }
+      }
       warnings.forEach(warning -> root.addText("diagnostic", warning));
       var transformer = TransformerFactory.newInstance().newTransformer();
       transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
@@ -192,6 +215,15 @@ public final class SphinxDoclet implements Doclet {
       reporter.print(Diagnostic.Kind.ERROR, "Sphinx extraction failed: " + e);
       return false;
     }
+  }
+
+  private boolean excluded(String pkg) {
+    return excluded.stream().anyMatch(prefix -> excluded(prefix, pkg));
+  }
+
+  /** Javadoc -exclude semantics: the package itself and its subpackages. */
+  private static boolean excluded(String prefix, String pkg) {
+    return pkg.equals(prefix) || pkg.startsWith(prefix + ".");
   }
 
   /** Whether the declaration and all enclosing declarations are public (or protected). */

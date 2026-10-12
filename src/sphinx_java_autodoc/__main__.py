@@ -31,6 +31,15 @@ def main():
         type=Path,
         help="Source lookup directory for ancestor docs; repeat for multiple roots",
     )
+    parser.add_argument(
+        "--encoding", default="UTF-8", help="Java source file encoding (default: UTF-8)"
+    )
+    parser.add_argument(
+        "--exclude-package",
+        action="append",
+        default=[],
+        help="Package to omit with its subpackages; repeat for multiple packages",
+    )
     parser.add_argument("--jdk", default="", help="JDK 25 home (default: java on PATH)")
     parser.add_argument(
         "--release", default="", help="Source/API release accepted by the installed JDK"
@@ -49,6 +58,8 @@ def main():
             jdk=args.jdk,
             release=args.release,
             sourcepath=args.sourcepath,
+            encoding=args.encoding,
+            exclude_packages=args.exclude_package,
         )
         diagnostics = model.root.findall("diagnostic")
         for diagnostic in diagnostics:
