@@ -658,6 +658,7 @@ public final class SphinxDoclet implements Doclet {
           parent.addText(tag, literal.getBody().getBody());
         }
         case SnippetTree snippet -> snippet(parent, owner, snippet);
+        case ValueTree value -> value(parent, owner, value);
         case EntityTree entity -> parent.addText("text", characters(entity));
         case LinkTree link -> {
           boolean plain = tree.getKind() == DocTree.Kind.LINK_PLAIN;
@@ -775,6 +776,51 @@ public final class SphinxDoclet implements Doclet {
           default -> "";
         };
     link.set("path", path).set("module", moduleName).set("fragment", fragment);
+  }
+
+  /**
+   * Writes a constant's Java source form, as the standard doclet does. A referenced constant links
+   * to its field; {@code {@value}} in the constant's own comment is plain text.
+   */
+  private void value(Xml parent, Element owner, ValueTree value) {
+    var ref = value.getReference();
+    Element target = ref == null ? owner : resolve(owner, ref);
+    Object constant = target instanceof VariableElement field ? field.getConstantValue() : null;
+    if (constant == null) {
+      if (ref == null) {
+        warn(owner, "{@value} without a reference must document a constant field.");
+      } else if (target == null) {
+        warn(
+            owner,
+            "Unresolved Javadoc reference %s; check spelling, source paths and classpath.",
+            ref);
+      } else {
+        warn(owner, "{@value %s} must reference a constant field.", ref);
+      }
+      parent.addText("literal", value.toString());
+      return;
+    }
+    String text = elements.getConstantExpression(constant);
+    if (value.getFormat() != null) {
+      String format = value.getFormat().getBody();
+      try {
+        text = String.format(Locale.ROOT, format, constant);
+      } catch (IllegalFormatException ex) {
+        warn(
+            owner,
+            "Invalid {@value} format %s for %s; use a java.util.Formatter format.",
+            format,
+            constant);
+      }
+    }
+    if (ref == null) {
+      parent.addText("literal", text);
+      return;
+    }
+    var link =
+        parent.add("link").set("plain", "true").set("target", id(target)).set("role", "field");
+    javadocLocation(link, target);
+    link.addText("literal", text);
   }
 
   private static String methodFragment(ExecutableElement method) {

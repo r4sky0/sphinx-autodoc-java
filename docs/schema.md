@@ -34,6 +34,10 @@ not a general XML document interchange service. No external entities are fetched
   tokens; `pre` accepts an optional `attr name="lang"` for syntax highlighting.
   Java is the default. Snippet text is not reparsed as HTML or Javadoc. Schema 1
   remains valid: older renderers can display the body and warn about the attribute.
+  `{@value}` produces a `literal` token with the constant's Java source form; a
+  referenced constant is a `plain` field `link` whose label is that `literal`.
+  HTML tables use `start`/`end` tokens (`table`, `caption`, `thead`, `tbody`,
+  `tfoot`, `tr`, `th`, `td`); `colspan`/`rowspan` are `attr` children.
 - `link`: `target` is the compiler's canonical symbol ID; `role` identifies the
   domain object kind. `path`, `module`, `fragment` hold external Javadoc location
   metadata; `plain` distinguishes link/plainlink presentation. Children form the

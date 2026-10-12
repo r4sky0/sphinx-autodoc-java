@@ -3,3 +3,16 @@ dl.java .pre {
     white-space: normal;
     overflow-wrap: anywhere;
 }
+
+/* Wide Javadoc tables scroll within the content column instead of the page. */
+table.java-table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* Code in table cells stays whole; the table scrolls instead. */
+table.java-table code .pre {
+    white-space: pre;
+    overflow-wrap: normal;
+}

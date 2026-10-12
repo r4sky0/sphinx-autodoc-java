@@ -60,6 +60,15 @@ def main():
                         )
                         == "https://example.test/?a=1&b=2"
                     )
+                    table = page.locator("table.java-table")
+                    assert (
+                        table.locator("caption")
+                        .inner_text()
+                        .startswith("Conversion examples")
+                    )
+                    assert table.locator("thead th").count() == 3
+                    assert 'Labelled "widget"' in table.inner_text()
+                    assert table.bounding_box()["width"] <= width
                     api_width = page.evaluate("document.documentElement.scrollWidth")
                     page.screenshot(
                         path=str(output / f"{theme}-{width}.png"), full_page=True
