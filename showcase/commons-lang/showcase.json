@@ -10,7 +10,7 @@
   "themes": {
     "furo": "Furo",
     "rtd": "Read the Docs",
-    "pydata": "PyData",
+    "alabaster": "Alabaster",
     "lumina": "Lumina"
   },
   "warnings": {

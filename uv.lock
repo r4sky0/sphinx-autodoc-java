@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 
 [[package]]
@@ -1017,25 +1017,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pydata-sphinx-theme"
-version = "0.23.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "accessible-pygments" },
-    { name = "babel" },
-    { name = "beautifulsoup4" },
-    { name = "docutils" },
-    { name = "jinja2" },
-    { name = "pygments" },
-    { name = "requests" },
-    { name = "sphinx" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/54/24/efb184268dc958ea894821b8643954be7746f67cdd2c08f8f47f9b0c4735/pydata_sphinx_theme-0.23.0.tar.gz", hash = "sha256:f9e647e0bb3f1d8eaa6d866248812711211313627cc4ae76b5f88a17a4be38ce", size = 5015474, upload-time = "2026-10-08T08:52:13.975Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/a9/187b2aa8ea213d72c13ce3627e605d922d697c470532d67b5b707d944b2c/pydata_sphinx_theme-0.23.0-py3-none-any.whl", hash = "sha256:7bf56f1eda7b03c62719dd0dd3b50035c8bfb72caf4faefa5ac46400a82e408f", size = 6214022, upload-time = "2026-10-08T08:52:11.881Z" },
-]
-
-[[package]]
 name = "pyee"
 version = "13.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1372,7 +1353,6 @@ dev = [
 ]
 showcase = [
     { name = "furo" },
-    { name = "pydata-sphinx-theme" },
     { name = "sphinx-lumina-theme" },
     { name = "sphinx-rtd-theme" },
 ]
@@ -1397,8 +1377,7 @@ dev = [
 ]
 showcase = [
     { name = "furo", specifier = ">=2025.12.19" },
-    { name = "pydata-sphinx-theme", specifier = ">=0.23.0" },
-    { name = "sphinx-lumina-theme", specifier = ">=2.9.9" },
+    { name = "sphinx-lumina-theme", specifier = ">=2.9.11" },
     { name = "sphinx-rtd-theme", specifier = ">=3.1.0" },
 ]
 
@@ -1416,16 +1395,16 @@ wheels = [
 
 [[package]]
 name = "sphinx-lumina-theme"
-version = "2.9.9"
+version = "2.9.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "sphinx" },
     { name = "sphinx-design" },
     { name = "sphinx-sitemap" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2b/4b/f39cd195e84cc5a417662400ad4d66d072df73a885346d51f445cb168e31/sphinx_lumina_theme-2.9.9.tar.gz", hash = "sha256:291d01ebc3e0a6c547a5446354099c33d776b32abc2848820c500a9dc7f75afd", size = 1862916, upload-time = "2026-10-11T09:37:05.918Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/ea/c29e5846f3484ba8012a62a1fb45b32c345a76627d07b5430e7576779b64/sphinx_lumina_theme-2.9.11.tar.gz", hash = "sha256:9a85690fafd8aab7c12839c11f645ffb20e43ab07dc47e9412e7b18ad66ab595", size = 1863216, upload-time = "2026-10-12T06:57:00.229Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/41/2843e34b97e9bb263decca39ab26562444f3c3af3892404bcb0be82c2c02/sphinx_lumina_theme-2.9.9-py3-none-any.whl", hash = "sha256:5a7bb2ff20908905803902b1702ed3ca2b98bc914c0feca38290e153ca890be9", size = 1378502, upload-time = "2026-10-11T09:37:03.827Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/9a/4478a15233b9f8329fdb814b59dd621e59054fba95d882fe304a226ac1c7/sphinx_lumina_theme-2.9.11-py3-none-any.whl", hash = "sha256:ed2fdfac0751c331d8d0686f36d10254dd3279262d04dd2b6d5312bc2b0c5f8e", size = 1379072, upload-time = "2026-10-12T06:56:58.221Z" },
 ]
 
 [[package]]

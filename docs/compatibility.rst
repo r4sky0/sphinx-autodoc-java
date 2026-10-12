@@ -36,10 +36,10 @@ Your library's own toolchain can stay as it is.
      - Linux, macOS and Windows in GitHub Actions
    * - HTML themes
      - Native Sphinx nodes
-     - Alabaster 1.0.0, Sphinx Classic, Furo 2025.12.19, Read the Docs 3.1.0, PyData
-       0.23.0 and Lumina 2.9.9 in Chromium at desktop (1440px) and mobile (390px)
-       widths. Classic keeps a minimum width on mobile; Read the Docs and PyData
-       overflow on phones for native Sphinx objects too, and Java pages stay within that.
+     - Alabaster 1.0.0, Sphinx Classic, Furo 2025.12.19, Read the Docs 3.1.0 and
+       Lumina 2.9.11 in Chromium at desktop (1440px) and mobile (390px) widths.
+       Classic keeps a minimum width on mobile; Read the Docs overflows on phones
+       for native Sphinx objects too, and Java pages stay within that.
    * - Other builders
      - Native Sphinx nodes
      - Text builder

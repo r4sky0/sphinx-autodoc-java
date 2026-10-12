@@ -9,7 +9,7 @@ theme = os.environ.get("SHOWCASE_THEME", "furo")
 THEMES = {
     "furo": "furo",
     "rtd": "sphinx_rtd_theme",
-    "pydata": "pydata_sphinx_theme",
+    "alabaster": "alabaster",
     "lumina": "lumina",
 }
 

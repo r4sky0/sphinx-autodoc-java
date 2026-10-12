@@ -61,8 +61,10 @@ append ``"sphinx_java_autodoc"`` to it instead of replacing the list.
 library's source/API target. Omitting it uses the selected JDK's default release. If JDK 25 is not on
 ``PATH``, add ``java_jdk = "/path/to/jdk-25"``.
 
-``java_generate`` creates pages in ``docs/api/``. ``java_visibility = "public"``
-focuses the reference on the public API. Use ``"protected"`` to also document
+``java_generate`` creates pages in ``docs/api/``: an index, a page per package and
+a page per type, titled with its name inside the package, such as
+``Widget.Nested``. ``java_visibility = "public"`` focuses the reference on the
+public API. Use ``"protected"`` to also document
 extension points for subclass authors.
 
 If your sources depend on other libraries, add their JARs or class directories

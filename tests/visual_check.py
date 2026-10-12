@@ -26,17 +26,8 @@ THEMES = (
     ("classic", "classic"),
     ("furo", "furo"),
     ("sphinx_rtd_theme", "sphinx_rtd_theme"),
-    ("pydata_sphinx_theme", "pydata_sphinx_theme"),
     ("lumina", "lumina"),
 )
-# Themes whose search page lists results with Sphinx's own search script.
-SPHINX_SEARCH = {
-    "alabaster",
-    "classic",
-    "furo",
-    "sphinx_rtd_theme",
-    "pydata_sphinx_theme",
-}
 
 
 def main():
@@ -58,6 +49,10 @@ def main():
             for theme, folder in THEMES:
                 for width in (1440, 390):
                     page = browser.new_page(viewport={"width": width, "height": 1000})
+                    errors = []
+                    page.on(
+                        "pageerror", lambda error, errors=errors: errors.append(error)
+                    )
                     base = f"http://127.0.0.1:{server.server_port}/{folder}"
                     # The theme's own layout: its index page and native Sphinx objects.
                     theme_width = 0
@@ -124,15 +119,15 @@ def main():
                     page.goto(base + "/index.html")
                     page.locator('.toctree-wrapper a[href="guide.html"]').first.click()
                     assert page.url.endswith("/guide.html")
-                    if theme in SPHINX_SEARCH:
-                        page.goto(base + "/search.html?q=convert")
-                        page.wait_for_function(
-                            "document.querySelectorAll('#search-results li').length > 0"
-                        )
-                        page.screenshot(
-                            path=str(output / f"{theme}-{width}-search.png"),
-                            full_page=True,
-                        )
+                    page.goto(base + "/search.html?q=convert")
+                    page.wait_for_function(
+                        "document.querySelectorAll('#search-results li').length > 0"
+                    )
+                    page.screenshot(
+                        path=str(output / f"{theme}-{width}-search.png"),
+                        full_page=True,
+                    )
+                    assert not errors, f"Page errors in {theme} at {width}px: {errors}"
                     page.close()
             browser.close()
     finally:

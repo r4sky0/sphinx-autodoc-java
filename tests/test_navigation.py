@@ -89,6 +89,16 @@ def test_type_pages_have_sections_with_summaries(site):
     assert by_name["old()"][2] == "Deprecated. Old entry point."
 
 
+def test_type_pages_are_titled_without_the_package(site):
+    for page, title in [
+        ("demo.Widget", "Widget"),
+        ("demo.Widget.Nested", "Widget.Nested"),
+    ]:
+        html = (site / f"api/type-{page}.html").read_text(encoding="utf-8")
+        assert f"<h1>{title}<a" in html
+        assert f"<title>{title} " in html
+
+
 def test_members_appear_in_the_page_toc_and_general_index(site):
     toc = parse(site / "api/type-demo.Widget.html").toc
     assert toc.index("Methods") < toc.index("convert(int)")

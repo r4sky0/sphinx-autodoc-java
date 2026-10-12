@@ -16,8 +16,8 @@ uv run --locked twine check --strict dist/*
 
 The docs link into the Apache Commons Lang showcase, so build it first:
 `showcase/build.py` fetches the pinned commit, builds its site under
-`build/showcase/commons-lang/html/<theme>/` in Furo, Read the Docs, PyData and
-Lumina (the `showcase` dependency group), and fails when a theme's warning category
+`build/showcase/commons-lang/html/<theme>/` in Furo, Read the Docs, Alabaster
+and Lumina (the `showcase` dependency group), and fails when a theme's warning category
 exceeds the shared baseline in `showcase/commons-lang/showcase.json`. After a change that removes
 warnings, record the new counts with `--update-baseline`; an increase needs a
 deliberate baseline update in the same change.
@@ -43,7 +43,7 @@ For the browser checks:
 ```sh
 uv sync --locked --extra test --group showcase
 uv run --locked --extra test --group showcase playwright install chromium
-for theme in alabaster classic furo sphinx_rtd_theme pydata_sphinx_theme lumina; do
+for theme in alabaster classic furo sphinx_rtd_theme lumina; do
   output=$theme; [ "$theme" = alabaster ] && output=html
   uv run --locked --extra test --group showcase sphinx-build -W --keep-going -n \
     -D "html_theme=$theme" examples/standalone/docs "examples/standalone/docs/_build/$output"
@@ -54,8 +54,8 @@ uv run --locked --extra test --group showcase python tests/visual_check.py
 Browser checks use the small site in `examples/standalone/docs`, which renders the
 standalone fixture with every documented feature. They cover
 desktop/mobile layouts, Java API structure and navigation in Alabaster, Classic,
-Furo, Read the Docs, PyData and Lumina, and search where the theme uses Sphinx's
-search page. CI retains screenshots and a JSON report, including on failures.
+Furo, Read the Docs and Lumina, including Sphinx's search page, and fail on
+uncaught page errors. CI retains screenshots and a JSON report, including on failures.
 API pages must not be wider than the theme's own layout, measured on the index and
 on `reference.rst`, a page of native Sphinx objects with the same fields. Classic
 keeps a minimum page width, and some themes overflow on phones for native objects.
