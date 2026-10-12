@@ -64,7 +64,7 @@ class Page(HTMLParser):
 
 def parse(path):
     page = Page()
-    page.feed(path.read_text())
+    page.feed(path.read_text(encoding="utf-8"))
     return page
 
 
@@ -92,7 +92,7 @@ def test_members_appear_in_the_page_toc_and_general_index(site):
     toc = parse(site / "api/type-demo.Widget.html").toc
     assert toc.index("Methods") < toc.index("convert(int)")
     assert "convert(String)" in toc
-    index = (site / "genindex.html").read_text()
+    index = (site / "genindex.html").read_text(encoding="utf-8")
     assert "convert(int) (Java method in demo.Widget)" in index
     assert "demo (Java package)" in index
 
@@ -114,7 +114,7 @@ def test_package_pages_and_index_summarize_by_kind(site):
 
 
 def test_deprecated_members_use_the_standard_notice(site):
-    html = (site / "api/type-demo.Widget.html").read_text()
+    html = (site / "api/type-demo.Widget.html").read_text(encoding="utf-8")
     method = html[html.index('id="' + anchor("demo.Widget#old()") + '"') :]
     content = method[: method.index("</dd>")]
     notice = '<span class="versionmodified deprecated">Deprecated: </span>'
