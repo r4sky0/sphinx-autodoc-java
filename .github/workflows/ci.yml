@@ -111,14 +111,15 @@ jobs:
   showcase:
     name: Showcase
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      # Fetches the pinned Commons Lang commit and fails on warnings above the baseline.
-      - run: uv run --locked python showcase/build.py
+      # Fetches the pinned Commons Lang commit, builds it in every showcase theme and
+      # fails on warnings above the baseline.
+      - run: uv run --locked --group showcase python showcase/build.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: showcase
@@ -130,25 +131,29 @@ jobs:
           name: showcase-report
           path: |
             build/showcase/commons-lang/report.json
-            build/showcase/commons-lang/warnings.log
+            build/showcase/commons-lang/warnings-*.log
           if-no-files-found: ignore
 
   browser:
     name: Browser
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - run: uv sync --locked --extra test
-      - run: uv run --locked --extra test playwright install --with-deps chromium
-      - name: Build the standalone fixture site in both themes
+      - run: uv sync --locked --extra test --group showcase
+      - run: uv run --locked --extra test --group showcase playwright install --with-deps chromium
+      - name: Build the standalone fixture site in every checked theme
         run: |
-          uv run --locked --extra test sphinx-build -W --keep-going -n examples/standalone/docs examples/standalone/docs/_build/html
-          uv run --locked --extra test sphinx-build -W --keep-going -n -D html_theme=classic examples/standalone/docs examples/standalone/docs/_build/classic
-      - run: uv run --locked --extra test python tests/visual_check.py
+          for theme in alabaster classic furo sphinx_rtd_theme pydata_sphinx_theme lumina; do
+            output=$theme
+            if [ "$theme" = alabaster ]; then output=html; fi
+            uv run --locked --extra test --group showcase sphinx-build -W --keep-going -n \
+              -D "html_theme=$theme" examples/standalone/docs "examples/standalone/docs/_build/$output"
+          done
+      - run: uv run --locked --extra test --group showcase python tests/visual_check.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

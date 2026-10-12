@@ -51,9 +51,9 @@ def member_group(member) -> str:
     return kind if kind in {"constructor", "method"} else "field"
 
 
-def short_signature(member) -> str:
-    """The member name with simple parameter types, as in Javadoc summaries."""
-    owner, _, rest = member.get("id").partition("#")
+def member_label(symbol: str) -> str:
+    """A member's name with simple parameter types, as in Javadoc summaries."""
+    owner, _, rest = symbol.partition("#")
     name, paren, parameters = rest.partition("(")
     if name == "<init>":
         name = owner.rpartition(".")[2]
@@ -61,6 +61,10 @@ def short_signature(member) -> str:
         return name
     simple = [p.rpartition(".")[2] for p in parameters.rstrip(")").split(",") if p]
     return f"{name}({', '.join(simple)})"
+
+
+def short_signature(member) -> str:
+    return member_label(member.get("id"))
 
 
 # Signature tokens from the model mapped to Sphinx's standard signature nodes.
@@ -117,6 +121,11 @@ def signature_nodes(tokens) -> list[nodes.Node]:
         elif token.tag in SIGNATURE_NODES:
             result.append(SIGNATURE_NODES[token.tag]("", text))
     return result
+
+
+def display_name(symbol: str) -> str:
+    owner, _, member = symbol.partition("#")
+    return f"{owner}.{member_label(symbol)}" if member else symbol
 
 
 class JavaDirective(SphinxDirective):
@@ -393,7 +402,9 @@ class JavaDomain(Domain):
 
     def get_objects(self):
         for symbol, (docname, target, kind) in sorted(self.data["objects"].items()):
-            yield symbol, symbol, kind, docname, target, 1
+            # Sphinx's search treats the text after the last dot as the object's name,
+            # so members display as Type.member(SimpleTypes); IDs stay canonical.
+            yield symbol, display_name(symbol), kind, docname, target, 0
 
     def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
         spelling = re.sub(r"\s+", "", target)

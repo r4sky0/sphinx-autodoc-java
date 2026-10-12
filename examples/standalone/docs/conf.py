@@ -13,3 +13,5 @@ html_theme = os.environ.get("JAVA_AUTODOC_THEME", "alabaster")
 exclude_patterns = ["_build"]
 nitpicky = True
 html_static_path = []
+# Some themes warn without a base URL; the fixture site is never published.
+html_baseurl = "https://fixture.invalid/"

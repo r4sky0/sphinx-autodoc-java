@@ -17,7 +17,8 @@ Read [the architecture decision](docs/adr/0001-jdk-doclet-xml-sphinx-domain.md) 
 - `src/sphinx_java_autodoc/__init__.py`: configuration, generated pages and build hooks.
 - `src/sphinx_java_autodoc/__main__.py`: extraction CLI.
 - `tests/test_integration.py`: real JDK/Sphinx integration tests.
-- `tests/visual_check.py`: opt-in browser checks for Alabaster and Classic.
+- `tests/visual_check.py`: opt-in browser checks in six themes, including the showcase
+  themes.
 - `examples/`: standalone, Maven, Gradle and dependency fixtures; `examples/standalone/docs`
   is the fixture site used by the browser checks.
 - `showcase/`: the Apache Commons Lang showcase, which is the API shown in the docs,
@@ -55,7 +56,7 @@ configured CI jobs are not evidence that an environment has passed.
 uv sync --locked
 uv run --locked pre-commit run --all-files
 uv run --locked pytest -q
-uv run --locked python showcase/build.py
+uv run --locked --group showcase python showcase/build.py
 uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
 ```
 

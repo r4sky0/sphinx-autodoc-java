@@ -8,7 +8,7 @@ uv sync --locked
 uv run --locked pre-commit install
 uv run --locked pre-commit run --all-files
 uv run --locked pytest -q
-uv run --locked python showcase/build.py
+uv run --locked --group showcase python showcase/build.py
 uv run --locked sphinx-build -W --keep-going -n docs docs/_build/html
 uv build
 uv run --locked twine check --strict dist/*
@@ -16,8 +16,9 @@ uv run --locked twine check --strict dist/*
 
 The docs link into the Apache Commons Lang showcase, so build it first:
 `showcase/build.py` fetches the pinned commit, builds its site under
-`build/showcase/commons-lang/` and fails when a warning category exceeds the
-baseline in `showcase/commons-lang/showcase.json`. After a change that removes
+`build/showcase/commons-lang/html/<theme>/` in Furo, Read the Docs, PyData and
+Lumina (the `showcase` dependency group), and fails when a theme's warning category
+exceeds its baseline in `showcase/commons-lang/showcase.json`. After a change that removes
 warnings, record the new counts with `--update-baseline`; an increase needs a
 deliberate baseline update in the same change.
 
@@ -40,19 +41,24 @@ Actions and pre-commit hook revisions. To update hooks by hand, run
 For the browser checks:
 
 ```sh
-uv sync --locked --extra test
-uv run --locked --extra test playwright install chromium
-uv run --locked --extra test sphinx-build -W --keep-going -n examples/standalone/docs examples/standalone/docs/_build/html
-uv run --locked --extra test sphinx-build -W --keep-going -n -D html_theme=classic examples/standalone/docs examples/standalone/docs/_build/classic
-uv run --locked --extra test python tests/visual_check.py
+uv sync --locked --extra test --group showcase
+uv run --locked --extra test --group showcase playwright install chromium
+for theme in alabaster classic furo sphinx_rtd_theme pydata_sphinx_theme lumina; do
+  output=$theme; [ "$theme" = alabaster ] && output=html
+  uv run --locked --extra test --group showcase sphinx-build -W --keep-going -n \
+    -D "html_theme=$theme" examples/standalone/docs "examples/standalone/docs/_build/$output"
+done
+uv run --locked --extra test --group showcase python tests/visual_check.py
 ```
 
 Browser checks use the small site in `examples/standalone/docs`, which renders the
 standalone fixture with every documented feature. They cover
-desktop/mobile layouts, Java API structure, navigation, and search for Alabaster
-and Classic. CI retains screenshots and a JSON report, including on failures.
-API pages must not add horizontal overflow beyond the theme's normal layout;
-Classic retains its fixed sidebar and minimum page width on mobile.
+desktop/mobile layouts, Java API structure and navigation in Alabaster, Classic,
+Furo, Read the Docs, PyData and Lumina, and search where the theme uses Sphinx's
+search page. CI retains screenshots and a JSON report, including on failures.
+API pages must not be wider than the theme's own layout, measured on the index and
+on `reference.rst`, a page of native Sphinx objects with the same fields. Classic
+keeps a minimum page width, and some themes overflow on phones for native objects.
 
 The required `All checks` status covers lint, compiler warnings, the test matrix,
 source/wheel packaging, the Commons Lang showcase baseline, strict docs, browser

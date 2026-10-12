@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from html.parser import HTMLParser
+import json
 import xml.etree.ElementTree as ET
 
 from docutils import nodes
@@ -154,3 +155,25 @@ def test_summaries_do_not_repeat_unresolved_link_warnings(tmp_path):
         project(tmp_path, sources=source.parent), tmp_path / "html", success=False
     )
     assert output.count("reference target not found: Links#hidden") == 1
+
+
+def test_search_finds_members_by_name_first(site):
+    script = (site / "searchindex.js").read_text(encoding="utf-8")
+    index = json.loads(script[script.index("(") + 1 : script.rindex(")")])
+    entries = {entry[4]: entry for entry in index["objects"]["demo.Widget"]}
+    assert entries["convert(int)"][2] == 0
+    assert "combine(int[][], String[])" in entries
+    assert [entry[2] for entry in index["objects"]["demo"]] == [0] * len(
+        index["objects"]["demo"]
+    )
+
+
+def test_repeated_fields_are_grouped(site):
+    html = (site / "api/type-demo.Widget.html").read_text(encoding="utf-8")
+    method = html[
+        html.index('id="' + anchor("demo.Widget#combine(int[][],java.lang.String[])")) :
+    ]
+    fields = method[: method.index("</dl>", method.index('class="field-list'))]
+    assert fields.count(">Parameters<") == 1
+    assert "<strong>values</strong> – input arrays" in fields
+    assert "<strong>labels</strong> – labels" in fields

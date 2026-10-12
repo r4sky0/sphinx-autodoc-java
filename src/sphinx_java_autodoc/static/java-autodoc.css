@@ -5,8 +5,7 @@ dl.java .pre {
 }
 
 /* Wide Javadoc tables scroll within the content column instead of the page. */
-table.java-table {
-    display: block;
+.java-table-wrapper {
     max-width: 100%;
     overflow-x: auto;
 }

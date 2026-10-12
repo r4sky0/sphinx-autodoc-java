@@ -6,13 +6,49 @@
   "version": "3.21.0",
   "tag": "rel/commons-lang-3.21.0",
   "commit": "155db038d73fe0ea49612d42ae70f6e48ee3ebb9",
+  "site": "https://r4sky0.github.io/sphinx-java-autodoc/showcase/commons-lang/",
+  "themes": {
+    "furo": "Furo",
+    "rtd": "Read the Docs",
+    "pydata": "PyData",
+    "lumina": "Lumina"
+  },
   "warnings": {
-    "java.extract": 106,
-    "java.html": 31,
-    "misc.highlighting_failure": 20,
-    "ref.field": 2,
-    "ref.method": 1,
-    "ref.obj": 11,
-    "ref.type": 1
+    "furo": {
+      "java.extract": 106,
+      "java.html": 31,
+      "misc.highlighting_failure": 20,
+      "ref.field": 2,
+      "ref.method": 1,
+      "ref.obj": 11,
+      "ref.type": 1
+    },
+    "rtd": {
+      "java.extract": 106,
+      "java.html": 31,
+      "misc.highlighting_failure": 20,
+      "ref.field": 2,
+      "ref.method": 1,
+      "ref.obj": 11,
+      "ref.type": 1
+    },
+    "pydata": {
+      "java.extract": 106,
+      "java.html": 31,
+      "misc.highlighting_failure": 20,
+      "ref.field": 2,
+      "ref.method": 1,
+      "ref.obj": 11,
+      "ref.type": 1
+    },
+    "lumina": {
+      "java.extract": 106,
+      "java.html": 31,
+      "misc.highlighting_failure": 20,
+      "ref.field": 2,
+      "ref.method": 1,
+      "ref.obj": 11,
+      "ref.type": 1
+    }
   }
 }
