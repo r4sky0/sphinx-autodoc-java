@@ -24,6 +24,13 @@ def main():
         type=Path,
         help="UTF-8 file containing a platform-separated compile classpath",
     )
+    parser.add_argument(
+        "--sourcepath",
+        action="append",
+        default=[],
+        type=Path,
+        help="Source lookup directory for ancestor docs; repeat for multiple roots",
+    )
     parser.add_argument("--jdk", default="", help="JDK 25 home (default: java on PATH)")
     parser.add_argument(
         "--release", default="", help="Source/API release accepted by the installed JDK"
@@ -41,6 +48,7 @@ def main():
             args.cache,
             jdk=args.jdk,
             release=args.release,
+            sourcepath=args.sourcepath,
         )
         diagnostics = read_model(path).findall("diagnostic")
         for diagnostic in diagnostics:

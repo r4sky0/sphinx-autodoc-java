@@ -145,10 +145,17 @@ def extract(
     *,
     jdk: str = "",
     release: str = "",
+    sourcepath: list[Path] | None = None,
 ) -> tuple[Path, str]:
     """Return immutable XML path and input fingerprint. All inputs are content hashed."""
     roots = [p.resolve() for p in sources]
     dependencies = [p.resolve() for p in classpath]
+    lookup = [p.resolve() for p in sourcepath or []]
+    for path in lookup:
+        if not path.is_dir():
+            raise ExtensionError(
+                f"Java autodoc: source lookup directory does not exist: {path}"
+            )
     files: set[Path] = set()
     for path in roots:
         if not path.exists():
@@ -161,7 +168,8 @@ def extract(
         raise ExtensionError(
             "Java autodoc: no sources configured; set java_sources or java_model."
         )
-    if any(p.name == "module-info.java" for p in files):
+    semantic_files = files | {p for root in lookup for p in root.rglob("*.java")}
+    if any(p.name == "module-info.java" for p in semantic_files):
         raise ExtensionError(
             "Java autodoc: JPMS module-info.java inputs are deferred; supply non-modular source roots or individual Java files and a compile classpath."
         )
@@ -217,12 +225,13 @@ def extract(
                 release,
                 [str(p) for p in roots],
                 [str(p) for p in dependencies],
+                [str(p) for p in lookup],
             ]
         ).encode()
     )
     update(DOCLET.read_bytes())
     update(Path(__file__).read_bytes())
-    for path in sorted(files):
+    for path in sorted(semantic_files):
         update(str(path).encode())
         update(path.read_bytes())
     for path in dependencies:
@@ -280,7 +289,10 @@ def extract(
         args += ["-classpath", os.pathsep.join(map(str, dependencies)) or str(empty)]
         args += [
             "-sourcepath",
-            os.pathsep.join(str(p) for p in roots if p.is_dir()) or str(empty),
+            os.pathsep.join(
+                str(p) for p in dict.fromkeys([p for p in roots if p.is_dir()] + lookup)
+            )
+            or str(empty),
         ]
         args += [str(p) for p in sorted(files)]
         # JDK argument files avoid command length limits; no shell interpolation.
@@ -305,6 +317,8 @@ def extract(
             message = diagnostics.strip().replace(str(work), "<extract>")
             for index, source in enumerate(roots):
                 message = message.replace(str(source), f"<source:{index}>")
+            for index, source in enumerate(lookup):
+                message = message.replace(str(source), f"<sourcepath:{index}>")
             for index, entry in enumerate(dependencies):
                 message = message.replace(str(entry), f"<classpath:{index}>")
             ET.SubElement(root, "diagnostic").text = message

@@ -135,6 +135,7 @@ def prepare(app):
             Path(app.doctreedir) / "java-cache",
             jdk=config.java_jdk,
             release=str(config.java_release),
+            sourcepath=[base / s for s in config.java_sourcepath],
         )
         root = read_model(path)
     else:
@@ -182,6 +183,7 @@ def setup(app):
     for name, default in {
         "java_sources": [],
         "java_classpath": [],
+        "java_sourcepath": [],
         "java_jdk": "",
         "java_release": "",
         "java_model": "",
