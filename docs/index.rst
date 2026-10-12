@@ -41,6 +41,7 @@ dependencies.
    usage
    javadoc-support
    compatibility
+   performance
    troubleshooting
 
 .. toctree::

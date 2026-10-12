@@ -91,8 +91,9 @@ preserves the last successful output if compilation or strict diagnostics fail.
 Maven
 -----
 
-The Maven and Gradle recipes below are provided as integration examples; neither
-has been executed in the recorded validation environment.
+The Maven and Gradle fixtures resolve Commons Lang and generate ``demo.BuildInfo``
+before compilation. Both complete workflows have been executed; see
+:doc:`compatibility` for versions. Dependency resolution is an explicit build step.
 
 ``examples/maven/pom.xml`` reuses the standalone source fixture. Resolve build
 plugins and dependencies in an explicit preparation step. The extension itself
@@ -101,7 +102,8 @@ never invokes Maven::
    mvn -f examples/maven/pom.xml -DskipTests compile \
      org.apache.maven.plugins:maven-dependency-plugin:3.11.0:build-classpath \
      -Dmdep.includeScope=compile -Dmdep.outputFile=target/classpath.txt
-   sphinx-java-autodoc examples/standalone/src \
+   sphinx-java-autodoc examples/standalone/src examples/build-consumer/src \
+     examples/maven/target/generated-sources/java-autodoc \
      --classpath-file examples/maven/target/classpath.txt \
      -o build/maven-api.xml --cache build/java-cache --warnings-as-errors
 
@@ -119,7 +121,8 @@ Gradle
 ``writeJavaAutodocClasspath`` task. With a Gradle distribution supporting JDK 25::
 
    gradle -p examples/gradle classes writeJavaAutodocClasspath
-   sphinx-java-autodoc examples/standalone/src \
+   sphinx-java-autodoc examples/standalone/src examples/build-consumer/src \
+     examples/gradle/build/generated/sources/java-autodoc \
      --classpath-file examples/gradle/build/java-autodoc-classpath.txt \
      -o build/gradle-api.xml --cache build/java-cache --warnings-as-errors
 
@@ -127,8 +130,14 @@ For your project, the
 `Java plugin <https://docs.gradle.org/current/userguide/java_plugin.html>`_
 provides ``sourceSets.main.compileClasspath``. Write its ``asPath`` to a UTF-8 file;
 pass source directories separately. No Gradle wrapper or automatic distribution
-download is bundled here. Neither Maven nor Gradle was installed in the validation
-environment; these integration recipes remain unexecuted.
+download is bundled here. To verify both complete examples, including extraction
+and strict rendering with Java unavailable on PATH, run::
+
+   uv run --locked python tests/build_tools_check.py
+
+Pass ``--maven`` and ``--gradle`` with executable paths when needed. The same check
+runs in the required CI consumer job. These fixtures use an explicit template-copy
+step for generated sources; they do not demonstrate annotation processing.
 
 Publish the site from CI
 ------------------------

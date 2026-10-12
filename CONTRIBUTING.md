@@ -60,9 +60,16 @@ API pages must not be wider than the theme's own layout, measured on the index a
 on `reference.rst`, a page of native Sphinx objects with the same fields. Classic
 keeps a minimum page width, and some themes overflow on phones for native objects.
 
+The opt-in `uv run --locked python tests/build_tools_check.py` check needs Maven
+and Gradle on PATH (or explicit `--maven`/`--gradle` executable paths). It runs the
+consumer builds and verifies strict extraction and JDK-free publication. Build
+tools resolve their declared dependencies explicitly. For real-project timing,
+use `uv run --locked python tests/benchmark.py /prepared/source/root`; see
+`docs/performance.rst` for the measured workload and limitations.
+
 The required `All checks` status covers lint, compiler warnings, the test matrix,
 source/wheel packaging, the Commons Lang showcase baseline, strict docs, browser
-checks, and dependency auditing.
+checks, Maven/Gradle consumers, and dependency auditing.
 Package checks install the wheel built from the source archive and run the real
 integration suite against that installation. Weekly CI also detects newly
 reported vulnerabilities. The application remains an initial release; passing CI

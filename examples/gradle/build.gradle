@@ -1,6 +1,17 @@
 plugins { id 'java' }
 
-sourceSets.main.java.srcDirs = ['../standalone/src']
+repositories { mavenCentral() }
+dependencies { implementation 'org.apache.commons:commons-lang3:3.21.0' }
+
+def generatedSources = layout.buildDirectory.dir('generated/sources/java-autodoc')
+sourceSets.main.java.srcDirs = ['../standalone/src', '../build-consumer/src', generatedSources]
+
+tasks.register('generateBuildInfo', Copy) {
+    from '../build-consumer/BuildInfo.java.in'
+    into generatedSources.map { it.dir('demo') }
+    rename 'BuildInfo.java.in', 'BuildInfo.java'
+}
+tasks.named('compileJava') { dependsOn 'generateBuildInfo' }
 
 tasks.withType(JavaCompile).configureEach {
     options.release = 17
