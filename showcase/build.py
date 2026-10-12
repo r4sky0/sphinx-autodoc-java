@@ -70,15 +70,17 @@ def main() -> int:
     shutil.rmtree(docs, ignore_errors=True)
     shutil.rmtree(html, ignore_errors=True)
     shutil.copytree(source, docs, ignore=shutil.ignore_patterns("__pycache__"))
+    # A stale log would hide the warnings of this build.
+    log.unlink(missing_ok=True)
     started = time.monotonic()
     subprocess.run(
         [
             sys.executable,
             "-m",
             "sphinx",
-            "-Q",
-            "-j",
-            "auto",
+            # -Q and parallel builds do not reliably write the -w log, so build
+            # serially and quietly, with warnings still recorded.
+            "-q",
             "--keep-going",
             "-w",
             str(log),
@@ -91,7 +93,7 @@ def main() -> int:
 
     warnings = Counter(
         (match.group(1) if (match := CATEGORY.search(line)) else "other")
-        for line in log.read_text().splitlines()
+        for line in (log.read_text().splitlines() if log.exists() else [])
         if "WARNING:" in line
     )
     report = {
