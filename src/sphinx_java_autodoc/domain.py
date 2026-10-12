@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from urllib.parse import quote
 
 from docutils import nodes
 from docutils.parsers.rst import directives
@@ -12,6 +11,7 @@ from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.nodes import make_refnode
 
+from .javadoc import external_url
 from .model import (
     MEMBER_GROUPS,
     PACKAGES,
@@ -377,32 +377,8 @@ class JavaDomain(Domain):
                 return None
             return make_refnode(builder, fromdocname, docname, ident, contnode, target)
         metadata = node.get("java:external") or REFERENCES.get(target, {})
-        for prefix, base in sorted(
-            env.config.java_external_javadoc.items(), key=lambda item: -len(item[0])
-        ):
-            if target != prefix and not target.startswith(prefix.rstrip(".") + "."):
-                continue
-            if metadata.get("path"):
-                path = metadata["path"]
-                fragment = metadata.get("fragment", "")
-                base = base.replace("{module}", metadata.get("module", ""))
-            else:
-                # Without compiler metadata, a mapping key must be the exact package.
-                if "{module}" in base:
-                    continue
-                owner, _, fragment = spelling.partition("#")
-                package = prefix.rstrip(".")
-                path = (
-                    package.replace(".", "/")
-                    + "/"
-                    + owner[len(package) + 1 :]
-                    + ".html"
-                )
-            url = base.rstrip("/") + "/" + quote(path, safe="/.$")
-            if fragment:
-                url += "#" + quote(fragment, safe="(),.[]$")
-            return nodes.reference("", "", contnode, refuri=url)
-        return None
+        url = external_url(target, spelling, metadata, env.config.java_external_javadoc)
+        return nodes.reference("", "", contnode, refuri=url) if url else None
 
     def resolve_any_xref(self, env, fromdocname, builder, target, node, contnode):
         resolved = self.resolve_xref(
