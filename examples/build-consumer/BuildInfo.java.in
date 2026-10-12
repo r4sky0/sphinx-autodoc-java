@@ -1,0 +1,8 @@
+package demo;
+
+/** Build metadata generated before documentation extraction. */
+public final class BuildInfo {
+    /** Name of the example build. */
+    public static final String NAME = "java-autodoc-consumer";
+    private BuildInfo() {}
+}

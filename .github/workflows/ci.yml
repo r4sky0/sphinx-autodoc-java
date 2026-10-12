@@ -176,10 +176,24 @@ jobs:
         run: uv export --locked --no-dev --no-emit-project --format requirements-txt -o /tmp/requirements.txt
       - run: uv run --locked pip-audit --require-hashes --disable-pip -r /tmp/requirements.txt
 
+  consumers:
+    name: Maven and Gradle consumers
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+        with:
+          gradle-version: "9.1.0"
+      - run: uv run --locked python tests/build_tools_check.py
+
   checks:
     name: All checks
     if: always()
-    needs: [lint, test, package, docs, showcase, browser, audit]
+    needs: [lint, test, package, docs, showcase, browser, audit, consumers]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

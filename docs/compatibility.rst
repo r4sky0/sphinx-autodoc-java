@@ -56,9 +56,8 @@ Not tested
 
 * Other JDK runtimes, Sphinx releases, Firefox and WebKit, PDF/LaTeX and EPUB
   builders.
-* The :doc:`Maven and Gradle recipes <build-integration>`: the example project
-  files are complete, but neither build tool has run them.
-* Large projects: there is no performance claim beyond the test fixtures.
+* Large multi-module projects. A measured single-library workload is recorded in
+  :doc:`performance`; its warnings prevent a claim of complete Javadoc fidelity.
 * Availability of remote Javadoc sites behind ``java_external_javadoc`` URLs.
 
 Known limits
@@ -97,3 +96,10 @@ The integration tests compare constructor, generic, array and varargs anchors wi
 actual standard Javadoc output, check byte-for-byte XML determinism across checkout
 locations, and confirm that extraction executes neither static initializers nor
 annotation processors.
+
+Consumer builds executed on 2026-10-11: Maven 3.10.0 and Gradle 9.1.0, Temurin
+25.0.3, Python 3.12.13 and Sphinx 9.1.0 on macOS 26.4.1 arm64. Both compiled
+Commons Lang 3.21.0 consumers and a generated source, exported the dependency
+classpath, extracted strictly, and passed a strict parallel Sphinx build with an
+empty PATH. CI repeats the consumer check on Linux; its configured job alone is
+not additional validation evidence.

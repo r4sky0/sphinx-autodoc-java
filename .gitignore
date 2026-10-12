@@ -15,3 +15,4 @@ examples/**/docs/api/
 .java-autodoc-cache/
 .ruff_cache/
 .DS_Store
+examples/**/.gradle/
