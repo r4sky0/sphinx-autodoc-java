@@ -94,25 +94,26 @@ The GitHub repository and the Python distribution share the name
 API token or repository deploy key is needed. See the
 [PyPI trusted publisher documentation](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
 
-To release:
+Releases are prepared by [Release Please](https://github.com/googleapis/release-please).
+On every push to `main`, it opens or updates a release PR from the conventional
+commits since the last release. That PR bumps `[project].version` in
+`pyproject.toml`, `VERSION` in `src/sphinx_java_autodoc/extractor.py` and the
+project entry in `uv.lock`, and updates `CHANGELOG.md`. Before 1.0, `feat:` and
+breaking changes bump the minor version and everything else the patch version.
+Add a `Release-As: 0.3.0` footer to a commit to choose the version explicitly.
 
-1. Update `[project].version` in `pyproject.toml` and `VERSION` in
-   `src/sphinx_java_autodoc/extractor.py` to the same value. Run `uv lock` and
-   include the lockfile update in the release PR.
-2. Merge the PR after `All checks` passes. Pull the updated `main` locally.
-3. Create and push the matching version tag, for example:
-
-   ```sh
-   git tag -a v0.1.0 -m "Release 0.1.0"
-   git push origin v0.1.0
-   ```
+To release, review and merge the release PR once `All checks` passes. Release
+Please then tags the merge commit, drafts a GitHub release with the changelog and
+dispatches the Release workflow for that tag. PRs and tags created with the
+default `GITHUB_TOKEN` don't trigger workflows by themselves, so Release Please
+also dispatches CI for its release PR.
 
 The Release workflow rejects branches, tags that disagree with either version,
 and commits outside `main`. It reruns CI on the tagged commit, publishes the
-tested wheel and sdist using PyPI OIDC with attestations, and creates a GitHub
-release with generated notes and distribution attachments. Published versions
-are immutable; fix a bad release with a new version. For prereleases, use a PEP
-440 version such as `0.2.0rc1` and the matching tag `v0.2.0rc1`.
+tested wheel and sdist using PyPI OIDC with attestations, then attaches them to
+the draft release and publishes it. Published versions are immutable; fix a bad
+release with a new version. A tag pushed by hand, for example `v0.1.0`, still
+runs the same workflow and creates a release with generated notes.
 
 To retry a failed release, rerun failed jobs in GitHub Actions. If publishing has
 not succeeded, you can also dispatch Release manually and select the existing
