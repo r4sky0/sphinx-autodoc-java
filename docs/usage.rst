@@ -132,6 +132,30 @@ the package. Set ``java_generate`` to generate its package index and type pages
 automatically. Generated pages are owned through a content-hash manifest. Edited or
 unowned files are never overwritten; put handwritten material outside that directory.
 
+Source links
+------------
+
+Enable `sphinx.ext.linkcode <https://www.sphinx-doc.org/en/master/usage/extensions/linkcode.html>`_
+to add a ``[source]`` link to each declaration. For the ``java`` domain, ``info``
+holds ``fullname`` (the canonical ID), ``source`` (the file path relative to its
+source root, such as ``com/example/Widget.java``) and ``line``:
+
+.. code-block:: python
+
+   extensions = ['sphinx_java_autodoc', 'sphinx.ext.linkcode']
+
+   def linkcode_resolve(domain, info):
+       if domain != 'java' or not info['line']:
+           return None
+       return (
+           'https://github.com/example/project/blob/main/src/main/java/'
+           f"{info['source']}#L{info['line']}"
+       )
+
+``line`` is empty for compiler-generated members, such as an enum's ``values()``.
+With several source roots, choose the root in ``linkcode_resolve``, for example by
+checking which root contains ``source``.
+
 .. _external-javadoc:
 
 External Javadoc and intersphinx

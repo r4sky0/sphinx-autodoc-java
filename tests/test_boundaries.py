@@ -65,6 +65,8 @@ def model(*names):
         ("type", "id", "other.A"),
         ("type", "name", "Other"),
         ("type", "kind", "method"),
+        ("type", "line", "0"),
+        ("type/member", "line", "12a"),
     ],
 )
 def test_model_rejects_invalid_declaration_contract(tmp_path, tag, key, value):

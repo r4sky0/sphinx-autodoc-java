@@ -7,6 +7,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from sphinx.errors import ExtensionError
+from sphinx.ext.linkcode import add_linkcode_domain
 from sphinx.util import logging
 
 from .domain import JavaDomain
@@ -99,6 +100,7 @@ def setup(app):
     }.items():
         app.add_config_value(name, default, "env")
     app.add_domain(JavaDomain)
+    add_linkcode_domain("java", ["fullname", "source", "line"])
     app.add_css_file("java-autodoc.css")
     app.connect("builder-inited", add_static_path)
     app.connect("builder-inited", prepare)

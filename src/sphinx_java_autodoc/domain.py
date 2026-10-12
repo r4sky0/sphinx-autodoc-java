@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 import re
 
 from docutils import nodes
@@ -129,7 +130,18 @@ class JavaDirective(SphinxDirective):
         desc = addnodes.desc(
             "", domain="java", objtype=role, desctype=role, classes=["java", role]
         )
-        sig = addnodes.desc_signature("", "", fullname=symbol)
+        package = element.get("package")
+        local = symbol.removeprefix(f"{package}.") if package else symbol
+        top = local.split("#")[0].split(".")[0]
+        # javac requires a public top-level type to live in a file named after it.
+        source = PurePosixPath(*package.split("."), f"{top}.java")
+        sig = addnodes.desc_signature(
+            "",
+            "",
+            fullname=symbol,
+            source=str(source),
+            line=element.get("line", ""),
+        )
         sig.extend(signature_nodes(element.find("sig")))
         limit = (
             self.config.java_maximum_signature_line_length

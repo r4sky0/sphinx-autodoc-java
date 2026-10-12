@@ -67,6 +67,8 @@ def read_model(path: Path) -> ET.Element:
             ids.add(node.attrib["id"])
             if node.get("visibility") not in {"public", "protected"}:
                 raise ValueError("invalid visibility")
+            if not re.fullmatch(r"[1-9]\d*", node.get("line", "1")):
+                raise ValueError("invalid line")
             symbol, name, kind, package = (
                 node.get(key) for key in ("id", "name", "kind", "package")
             )

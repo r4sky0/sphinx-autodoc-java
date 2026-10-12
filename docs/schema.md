@@ -16,6 +16,8 @@ not a general XML document interchange service. No external entities are fetched
 - `member`: same attributes and `sig`. Kinds include `constructor`, `method`, `field`,
   `enum_constant`, `record_component`. Types include `class`, `interface`, `enum`, `record`,
   `annotation_type`.
+- `line` (optional on `type` and `member`): the declaration's first source line,
+  including annotations. Compiler-generated members have none. Additive in schema 1.
 - `sig` (required child of `type` and `member`): the declaration as signature tokens,
   so renderers can link types and build native signature nodes. Tags: `k` keyword
   or modifier, `kt` primitive type or `void`, `t` punctuation or spaces, `q` package
@@ -63,7 +65,8 @@ for varargs, as verified against the standard doclet. Return types and
 parameter names do not affect IDs. HTML anchors are `java-` plus UTF-8 bytes of the
 ID encoded in hexadecimal: deterministic, reversible and collision-free.
 
-Declarations and diagnostics are sorted; no build timestamp or source location is
-stored. The private cache filename includes a SHA-256 input fingerprint and is not
+Declarations and diagnostics are sorted; no build timestamp or source path is
+stored. Renderers derive a declaration's file from its package and top-level type
+name. The private cache filename includes a SHA-256 input fingerprint and is not
 part of a published model. Schema evolution requires an explicit version change
 when consumers cannot safely interpret the changed structure.

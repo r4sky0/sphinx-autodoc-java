@@ -163,6 +163,28 @@ def test_html_links_structure_inventory_search(site):
     assert "transform" in (out / "searchindex.js").read_text().lower()
 
 
+def test_linkcode_links_declarations_to_source_lines(model, tmp_path):
+    root = model.root
+    assert element(root, "demo.Mode").get("line") == "3"
+    # Compiler-generated members have no source position.
+    assert element(root, "demo.Mode#values()").get("line") is None
+    docs = project(
+        tmp_path,
+        extra="extensions.append('sphinx.ext.linkcode')\n"
+        "def linkcode_resolve(domain, info):\n"
+        "    if domain == 'java' and info['line']:\n"
+        "        return f\"https://src.test/{info['source']}#L{info['line']}\"\n",
+    )
+    out = tmp_path / "html"
+    build(docs, out)
+    widget = (out / "api/type-demo.Widget.html").read_text()
+    for line in (34, 56):
+        assert f'href="https://src.test/demo/Widget.java#L{line}"' in widget
+    nested = (out / "api/type-demo.Widget.Nested.html").read_text()
+    assert 'href="https://src.test/demo/Widget.java#L76"' in nested
+    assert "viewcode-link" in nested
+
+
 def test_intersphinx_consumer(site, tmp_path):
     _, provider = site
     docs = tmp_path / "consumer"

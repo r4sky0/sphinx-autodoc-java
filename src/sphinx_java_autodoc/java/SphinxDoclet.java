@@ -493,6 +493,15 @@ public final class SphinxDoclet implements Doclet {
             .set("kind", e.getKind().name().toLowerCase(Locale.ROOT))
             .set("visibility", visible(e, true) ? "public" : "protected")
             .set("package", elements.getPackageOf(e).getQualifiedName().toString());
+    // The line lets sphinx.ext.linkcode link to the source; generated members have none.
+    var path = trees.getPath(e);
+    if (path != null) {
+      var unit = path.getCompilationUnit();
+      long start = trees.getSourcePositions().getStartPosition(unit, path.getLeaf());
+      if (start >= 0) {
+        node.set("line", Long.toString(unit.getLineMap().getLineNumber(start)));
+      }
+    }
     sig(node, e);
     documentation(node, e);
     return node;
