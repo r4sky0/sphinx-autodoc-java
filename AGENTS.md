@@ -7,7 +7,7 @@ and Sphinx APIs. Read the affected code and preserve unrelated work.
 ## Architecture and code map
 
 The pipeline is Java source → JDK doclet → versioned XML → native Sphinx nodes.
-Read [the architecture decision](docs/adr-001.md) before changing this boundary.
+Read [the architecture decision](docs/adr/0001-jdk-doclet-xml-sphinx-domain.md) before changing this boundary.
 
 - `src/sphinx_java_autodoc/java/SphinxDoclet.java`: declarations, semantic links,
   signatures, comment tokens and documentation inheritance.
@@ -75,4 +75,18 @@ without testing.
 - Keep the project version in `pyproject.toml` and `VERSION` in `extractor.py` in
   sync when preparing a release. Follow `CONTRIBUTING.md` for release procedures.
 - Update usage documentation and recorded limitations when behavior changes.
-  Rejected alternatives are in `docs/adr-001.md`; deferred work is in `docs/roadmap.md`.
+  Rejected alternatives are in `docs/adr/0001-jdk-doclet-xml-sphinx-domain.md`; deferred work is in `docs/roadmap.md`.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues in `r4sky0/sphinx-java-autodoc`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: a root `CONTEXT.md`, created when first needed, plus ADRs in `docs/adr/`. See `docs/agents/domain.md`.

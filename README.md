@@ -56,7 +56,7 @@ Then continue with:
   classpaths, pre-extracted models and publishing to GitHub Pages
 - [Configuration and reference](https://r4sky0.github.io/sphinx-java-autodoc/usage.html) and [supported Javadoc](https://r4sky0.github.io/sphinx-java-autodoc/javadoc-support.html)
 - [Troubleshooting](https://r4sky0.github.io/sphinx-java-autodoc/troubleshooting.html)
-- [How it works](https://r4sky0.github.io/sphinx-java-autodoc/design.html) and the [architecture decision](docs/adr-001.md)
+- [How it works](https://r4sky0.github.io/sphinx-java-autodoc/design.html) and the [architecture decision](docs/adr/0001-jdk-doclet-xml-sphinx-domain.md)
 
 ## Development
 
