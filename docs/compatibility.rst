@@ -79,8 +79,9 @@ Known limits
   check that the symbol exists.
 * JPMS ``module-info.java`` inputs are rejected; several non-modular source roots
   are supported. Annotation processors and Lombok-like transformations are not run.
-* Any input change re-extracts the whole project, cache hits still hash all
-  dependency bytes, and old cache entries are not evicted.
+* Any input change re-extracts the whole project, and cache hits still hash all
+  dependency bytes. Sphinx keeps only the current model in its cache; the CLI's
+  ``--cache`` directory does not evict old entries.
 * Sphinx can leave obsolete HTML files after a type is removed, so publish from a
   clean output directory. Each generated-page directory must belong to one Sphinx
   process at a time; that process's own ``-j`` workers are supported.

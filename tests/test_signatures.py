@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import re
-
 import pytest
 from sphinx.errors import ExtensionError
 from test_integration import SOURCES, build, element, project
 
 from sphinx_java_autodoc.domain import anchor
 from sphinx_java_autodoc.extractor import extract, read_model
+from sphinx_java_autodoc.render import deprecated
 
 ORACLE = "https://docs.oracle.com/en/java/javase/25/docs/api/"
 
@@ -66,25 +65,31 @@ def test_long_parameter_lists_follow_the_sphinx_option(tmp_path):
     assert "<dd>" not in short
 
 
-def test_models_without_signature_tokens_still_render(tmp_path):
-    path, _ = extract([SOURCES], [], tmp_path / "cache")
-    model = tmp_path / "old.xml"
-    text = path.read_text()
-    while "<sig>" in text:
-        text = text[: text.index("<sig>")] + text[text.index("</sig>") + 6 :]
-    model.write_text(text)
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    (docs / "conf.py").write_text(
-        "extensions = ['sphinx_java_autodoc']\n"
-        f"java_model = {str(model)!r}\njava_generate = 'api'\n"
-        f"java_external_javadoc = {{'java': '{ORACLE}{{module}}/'}}\n"
-    )
-    (docs / "index.rst").write_text("Old\n===\n\n.. toctree::\n\n   api/index\n")
-    build(docs, tmp_path / "html")
-    html = (tmp_path / "html/api/type-demo.Widget.html").read_text()
-    text = " ".join(re.sub(r"<[^>]+>", " ", html).split())
-    assert "public class demo.Widget implements demo.Transformer" in text
+def test_only_annotations_on_the_declaration_mark_it_deprecated(tmp_path):
+    source = tmp_path / "p/R.java"
+    source.parent.mkdir()
+    source.write_text("""package p;
+/** A record. */
+public record R(@Deprecated int old, int now) {
+  /** Not deprecated. @param s text */
+  public void m(@Deprecated String s) {}
+  /** Not deprecated either. */
+  public static final String TAG = "@java.lang.Deprecated";
+  /** Deprecated. */
+  @Deprecated
+  public void gone() {}
+}
+""")
+    path, _ = extract([tmp_path], [], tmp_path / "cache")
+    root = read_model(path)
+    flagged = {e.get("id") for e in root.iter() if e.get("id") and deprecated(e)}
+    assert "p.R#gone()" in flagged
+    assert not flagged & {
+        "p.R",
+        "p.R#<init>(int,int)",
+        "p.R#m(java.lang.String)",
+        "p.R#TAG",
+    }
 
 
 @pytest.mark.parametrize(

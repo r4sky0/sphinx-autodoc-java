@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
+import xml.etree.ElementTree as ET
 
 from docutils import nodes
 from docutils.parsers.rst import directives
@@ -15,6 +16,26 @@ from sphinx.util.nodes import make_refnode
 from .render import deprecated, documentation, summary
 
 LOGGER = logging.getLogger(__name__)
+# The extracted model, indexed by prepare() on every build. It stays out of the pickled
+# environment; forked parallel workers inherit it.
+SYMBOLS: dict[str, ET.Element] = {}
+PACKAGES: dict[str, ET.Element] = {}
+REFERENCES: dict[str, dict[str, str]] = {}
+
+
+def use_model(root: ET.Element) -> None:
+    SYMBOLS.clear()
+    SYMBOLS.update(
+        (e.get("id"), e) for e in root.findall("type") + root.findall("type/member")
+    )
+    PACKAGES.clear()
+    PACKAGES.update((p.get("name"), p) for p in root.findall("package"))
+    REFERENCES.clear()
+    REFERENCES.update((n.get("target"), dict(n.attrib)) for n in root.iter("link"))
+
+
+def visible(element, visibility: str) -> bool:
+    return visibility == "protected" or element.get("visibility") == "public"
 
 
 def anchor(symbol: str) -> str:
@@ -61,10 +82,6 @@ def member_label(symbol: str) -> str:
         return name
     simple = [p.rpartition(".")[2] for p in parameters.rstrip(")").split(",") if p]
     return f"{name}({', '.join(simple)})"
-
-
-def short_signature(member) -> str:
-    return member_label(member.get("id"))
 
 
 # Signature tokens from the model mapped to Sphinx's standard signature nodes.
@@ -130,17 +147,14 @@ def display_name(symbol: str) -> str:
 
 class JavaDirective(SphinxDirective):
     def visible(self, element) -> bool:
-        visibility = self.options.get("visibility", self.config.java_visibility)
-        return visibility == "protected" or element.get("visibility") == "public"
+        return visible(
+            element, self.options.get("visibility", self.config.java_visibility)
+        )
 
-    def lookup(self, symbol, tags=("type", "type/member")):
-        model = self.env.java_model
+    def lookup(self, symbol, tags=("type", "member")):
         self.env.note_dependency(self.env.java_model_path)
-        for tag in tags:
-            for element in model.findall(tag):
-                if element.get("id") == symbol:
-                    return element
-        return None
+        element = SYMBOLS.get(symbol)
+        return element if element is not None and element.tag in tags else None
 
     def missing(self, what, symbol, subtype):
         LOGGER.warning(
@@ -159,25 +173,18 @@ class JavaDirective(SphinxDirective):
             "", domain="java", objtype=role, desctype=role, classes=["java", role]
         )
         sig = addnodes.desc_signature("", "", fullname=symbol)
-        tokens = element.find("sig")
-        if tokens is None:
-            # Models from older extractors have only the signature text.
-            sig += addnodes.desc_name("", element.get("signature"))
-        else:
-            sig.extend(signature_nodes(tokens))
-            limit = (
-                self.config.java_maximum_signature_line_length
-                or self.config.maximum_signature_line_length
-            )
-            if limit and len(element.get("signature")) > limit:
-                for parameters in sig.findall(addnodes.desc_parameterlist):
-                    parameters["multi_line_parameter_list"] = True
+        sig.extend(signature_nodes(element.find("sig")))
+        limit = (
+            self.config.java_maximum_signature_line_length
+            or self.config.maximum_signature_line_length
+        )
+        if limit and len(sig.astext()) > limit:
+            for parameters in sig.findall(addnodes.desc_parameterlist):
+                parameters["multi_line_parameter_list"] = True
         owner, _, member = symbol.partition("#")
         # Sphinx lists objects in the page's table of contents from these attributes.
         sig["_toc_parts"] = (owner, member) if member else (owner,)
-        sig["_toc_name"] = (
-            short_signature(element) if member else owner.rpartition(".")[2]
-        )
+        sig["_toc_name"] = member_label(symbol) if member else owner.rpartition(".")[2]
         result = [desc]
         if "no-index" not in self.options:
             target = anchor(symbol)
@@ -268,7 +275,7 @@ class AutoMember(JavaDirective):
 
     def run(self):
         symbol = re.sub(r"\s+", "", self.arguments[0])
-        element = self.lookup(symbol.replace("...", "[]"), ("type/member",))
+        element = self.lookup(symbol.replace("...", "[]"), ("member",))
         if element is None:
             self.missing("member", symbol, "member")
             return []
@@ -281,14 +288,7 @@ class AutoPackage(JavaDirective):
     def run(self):
         package = self.arguments[0].strip()
         self.env.note_dependency(self.env.java_model_path)
-        element = next(
-            (
-                p
-                for p in self.env.java_model.findall("package")
-                if p.get("name") == package
-            ),
-            None,
-        )
+        element = PACKAGES.get(package)
         if element is None:
             self.missing("package", package, "package")
             return []
@@ -308,9 +308,7 @@ class AutoSummary(JavaDirective):
     has_content = True
 
     def run(self):
-        model = self.env.java_model
         self.env.note_dependency(self.env.java_model_path)
-        packages = {p.get("name"): p for p in model.findall("package")}
         table = nodes.table("", classes=["autosummary", "longtable", "java"])
         group = nodes.tgroup("", cols=2)
         group += nodes.colspec("", colwidth=10)
@@ -324,14 +322,14 @@ class AutoSummary(JavaDirective):
             if element is not None:
                 owner, _, member = symbol.partition("#")
                 label = (
-                    short_signature(element)
+                    member_label(symbol)
                     if member
                     else symbol[len(element.get("package")) + 1 :]
                     if element.get("package")
                     else symbol
                 )
-            elif symbol in packages:
-                element, label = packages[symbol], symbol
+            elif symbol in PACKAGES:
+                element, label = PACKAGES[symbol], symbol
             else:
                 self.missing("object", symbol, "summary")
                 continue
@@ -410,7 +408,8 @@ class JavaDomain(Domain):
         spelling = re.sub(r"\s+", "", target)
         target = spelling.replace("...", "[]")
         objects = self.data["objects"]
-        if target not in objects and "(" not in target:
+        # Only member names can omit their parameter list.
+        if target not in objects and "#" in target and "(" not in target:
             matches = [key for key in objects if key.startswith(target + "(")]
             if len(matches) == 1:
                 target = matches[0]
@@ -428,14 +427,12 @@ class JavaDomain(Domain):
             if typ not in {"obj", kind}:
                 return None
             return make_refnode(builder, fromdocname, docname, ident, contnode, target)
-        metadata = node.get("java:external") or env.java_references.get(target, {})
+        metadata = node.get("java:external") or REFERENCES.get(target, {})
         for prefix, base in sorted(
             env.config.java_external_javadoc.items(), key=lambda item: -len(item[0])
         ):
             if target != prefix and not target.startswith(prefix.rstrip(".") + "."):
                 continue
-            if urlsplit(base).scheme not in {"https", "http"}:
-                return None
             if metadata.get("path"):
                 path = metadata["path"]
                 fragment = metadata.get("fragment", "")

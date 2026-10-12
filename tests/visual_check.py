@@ -1,9 +1,10 @@
-"""Opt-in browser validation of the standalone fixture site in Alabaster and Classic.
+"""Opt-in browser validation of the standalone fixture site in six themes.
 
     python -m playwright install chromium
     sphinx-build -W --keep-going -n examples/standalone/docs examples/standalone/docs/_build/html
     sphinx-build -W --keep-going -n -D html_theme=classic examples/standalone/docs \\
         examples/standalone/docs/_build/classic
+    # ...and likewise for each other theme in THEMES, into _build/<theme>.
     python tests/visual_check.py
 
 Produces screenshots and a JSON report under build/visual. Not part of pytest:

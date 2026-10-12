@@ -366,8 +366,9 @@ SENTENCE_END = re.compile(r"\.(?=\s|$)")
 
 
 def deprecated(element: ET.Element) -> bool:
+    # Only annotations directly on the declaration, not on parameters or in values.
     return element.find("doc/part[@kind='deprecated']") is not None or (
-        "@java.lang.Deprecated" in element.get("signature", "")
+        element.find("sig/r[@target='java.lang.Deprecated']") is not None
     )
 
 

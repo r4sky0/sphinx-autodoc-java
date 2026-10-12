@@ -5,8 +5,9 @@
 Fetches the pinned upstream commit explicitly (documentation builds never download
 sources themselves) and builds it under build/showcase/<name> once per theme in
 showcase.json, writing html/<theme>/, warnings-<theme>.log and report.json there.
-Exits nonzero if a theme's warning category exceeds its baseline in showcase.json;
---update-baseline records the current counts.
+Exits nonzero if a theme's warning category exceeds the baseline in showcase.json;
+--update-baseline records the current counts. Warnings come from the extension, not
+the theme, so all themes share one baseline.
 """
 
 from __future__ import annotations
@@ -121,7 +122,7 @@ def main() -> int:
         report[theme] = {"seconds": seconds, "warnings": warnings}
         pages = len(list((html / theme / "api").glob("*.html")))
         print(f"{theme}: {pages} API pages in {seconds}s")
-        baseline = meta["warnings"].get(theme, {})
+        baseline = meta["warnings"]
         for category in sorted(warnings.keys() | baseline.keys()):
             now, before = warnings.get(category, 0), baseline.get(category, 0)
             marker = " (above baseline)" if now > before else ""
@@ -131,8 +132,10 @@ def main() -> int:
     (work / "report.json").write_text(json.dumps(report, indent=2) + "\n")
 
     if args.update_baseline:
+        counts = [report[theme]["warnings"] for theme in meta["themes"]]
         meta["warnings"] = {
-            theme: report[theme]["warnings"] for theme in meta["themes"]
+            category: max(c.get(category, 0) for c in counts)
+            for category in sorted(set().union(*counts))
         }
         meta_path.write_text(json.dumps(meta, indent=2) + "\n")
         print(f"Recorded baseline in {meta_path.relative_to(ROOT)}.")
