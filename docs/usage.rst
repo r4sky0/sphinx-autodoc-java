@@ -47,6 +47,10 @@ that file; ``java_generate`` is relative to the Sphinx source directory.
    * - ``java_external_javadoc``
      - ``{}``
      - Package prefixes mapped to external Javadoc roots; examples below.
+   * - ``java_maximum_signature_line_length``
+     - ``None``
+     - Signatures longer than this put each parameter on its own line. Unset uses
+       Sphinx's ``maximum_signature_line_length``.
 
 Empty or missing source roots and missing classpath entries are errors. Leave
 both ``java_sources`` and ``java_model`` unset when only consuming another site's

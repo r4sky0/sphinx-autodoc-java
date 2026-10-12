@@ -63,6 +63,62 @@ def short_signature(member) -> str:
     return f"{name}({', '.join(simple)})"
 
 
+# Signature tokens from the model mapped to Sphinx's standard signature nodes.
+SIGNATURE_NODES = {
+    "k": addnodes.desc_sig_keyword,
+    "kt": addnodes.desc_sig_keyword_type,
+    "q": addnodes.desc_addname,
+    "n": addnodes.desc_name,
+    "tv": addnodes.desc_sig_name,
+    "pname": addnodes.desc_sig_name,
+}
+
+
+def signature_nodes(tokens) -> list[nodes.Node]:
+    result: list[nodes.Node] = []
+    for token in tokens:
+        text = token.text or ""
+        if token.tag == "params":
+            parameters = addnodes.desc_parameterlist()
+            for parameter in token.findall("param"):
+                parameters += addnodes.desc_parameter(
+                    "", "", *signature_nodes(parameter)
+                )
+            result.append(parameters)
+        elif token.tag == "t":
+            for part in re.split(r"( +)", text):
+                if part:
+                    result.append(
+                        addnodes.desc_sig_space()
+                        if part.isspace()
+                        else addnodes.desc_sig_punctuation("", part)
+                    )
+        elif token.tag == "v":
+            literal = (
+                addnodes.desc_sig_literal_string
+                if text[:1] in {'"', "'"}
+                else addnodes.desc_sig_literal_number
+            )
+            result.append(literal("", text))
+        elif token.tag == "r":
+            # Like type annotations in Sphinx's Python domain, unresolved types stay
+            # plain text and only warn in nitpicky mode.
+            reference = addnodes.pending_xref(
+                "",
+                nodes.Text(text),
+                refdomain="java",
+                reftype="type",
+                reftarget=token.get("target", ""),
+                refexplicit=True,
+                refwarn=False,
+            )
+            reference["java:external"] = dict(token.attrib)
+            result.append(reference)
+        elif token.tag in SIGNATURE_NODES:
+            result.append(SIGNATURE_NODES[token.tag]("", text))
+    return result
+
+
 class JavaDirective(SphinxDirective):
     def visible(self, element) -> bool:
         visibility = self.options.get("visibility", self.config.java_visibility)
@@ -94,7 +150,19 @@ class JavaDirective(SphinxDirective):
             "", domain="java", objtype=role, desctype=role, classes=["java", role]
         )
         sig = addnodes.desc_signature("", "", fullname=symbol)
-        sig += addnodes.desc_name("", element.get("signature"))
+        tokens = element.find("sig")
+        if tokens is None:
+            # Models from older extractors have only the signature text.
+            sig += addnodes.desc_name("", element.get("signature"))
+        else:
+            sig.extend(signature_nodes(tokens))
+            limit = (
+                self.config.java_maximum_signature_line_length
+                or self.config.maximum_signature_line_length
+            )
+            if limit and len(element.get("signature")) > limit:
+                for parameters in sig.findall(addnodes.desc_parameterlist):
+                    parameters["multi_line_parameter_list"] = True
         owner, _, member = symbol.partition("#")
         # Sphinx lists objects in the page's table of contents from these attributes.
         sig["_toc_parts"] = (owner, member) if member else (owner,)
