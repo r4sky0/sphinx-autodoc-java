@@ -230,7 +230,7 @@ def setup(app):
     app.connect("missing-reference", quiet_reference)
     return {
         "version": VERSION,
-        "env_version": 2,
+        "env_version": 3,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }

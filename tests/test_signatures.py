@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 import pytest
+from sphinx.errors import ExtensionError
 from test_integration import SOURCES, build, element, project
 
 from sphinx_java_autodoc.domain import anchor
@@ -84,3 +85,22 @@ def test_models_without_signature_tokens_still_render(tmp_path):
     html = (tmp_path / "html/api/type-demo.Widget.html").read_text()
     text = " ".join(re.sub(r"<[^>]+>", " ", html).split())
     assert "public class demo.Widget implements demo.Transformer" in text
+
+
+@pytest.mark.parametrize(
+    "sig",
+    [
+        "<sig><script>x</script></sig>",
+        "<sig><r target='java.lang.String)'>String</r></sig>",
+        "<sig><r target='java.lang.String'><t>x</t></r></sig>",
+        "<sig><params><t>x</t></params></sig>",
+    ],
+)
+def test_models_with_invalid_signature_tokens_are_rejected(tmp_path, sig):
+    path, _ = extract([SOURCES], [], tmp_path / "cache")
+    text = path.read_text()
+    start = text.index("<sig>")
+    model = tmp_path / "bad.xml"
+    model.write_text(text[:start] + sig + text[text.index("</sig>", start) + 6 :])
+    with pytest.raises(ExtensionError, match="invalid model"):
+        read_model(model)

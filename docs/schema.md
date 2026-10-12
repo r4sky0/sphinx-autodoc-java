@@ -23,7 +23,8 @@ not a general XML document interchange service. No external entities are fetched
   or default value, `r` type reference, and `params` containing one `param` per
   parameter or record component. `r` carries `target` (canonical ID) and the external
   Javadoc `path`, `module` and `fragment`; its text is the nested simple name.
-  Renderers without `sig` support use `signature`, which remains required, so schema
+  Readers reject unknown tokens and malformed `r` targets. Renderers without `sig`
+  support use `signature`, which remains required, so schema
   1 still applies.
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
   `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration
