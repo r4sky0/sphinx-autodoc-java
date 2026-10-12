@@ -43,6 +43,7 @@ dependencies.
    compatibility
    performance
    troubleshooting
+   alternatives
 
 .. toctree::
    :caption: Live example
