@@ -6,7 +6,7 @@ from docutils import nodes
 import pytest
 from test_integration import build, element
 
-from sphinx_java_autodoc.extractor import extract, read_model, run
+from sphinx_java_autodoc.extractor import extract, run
 from sphinx_java_autodoc.render import comment
 
 
@@ -26,8 +26,7 @@ def test_inline_snippets_preserve_literal_content_and_standard_indentation(tmp_p
  */
 public class Snippets {}
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root, path, _ = extract([source], [], tmp_path / "cache")
     assert not root.findall("diagnostic")
     part = element(root, "Snippets").find("doc/part[@kind='body']")
     content = nodes.container("", *comment(part, None))
@@ -107,8 +106,7 @@ public class Snippets {}
 def test_unsupported_snippet_features_are_diagnosed(tmp_path, snippet):
     source = tmp_path / "Snippets.java"
     source.write_text(f"/** {snippet} */ public class Snippets {{}}")
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert any("Unsupported snippet" in d.text for d in root.findall("diagnostic"))
     assert snippet in "".join(element(root, "Snippets").itertext())
 
@@ -116,8 +114,7 @@ def test_unsupported_snippet_features_are_diagnosed(tmp_path, snippet):
 def test_empty_inline_snippet(tmp_path):
     source = tmp_path / "Snippets.java"
     source.write_text("/** Before. {@snippet :\n} After. */ public class Snippets {}")
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     content = nodes.container("", *comment(root.find("type/doc/part"), None))
     assert next(content.findall(nodes.literal_block)).astext() == ""

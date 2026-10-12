@@ -25,10 +25,8 @@ def method_html(html, symbol):
 
 
 def test_signature_tokens_are_extracted(tmp_path):
-    path, _ = extract([SOURCES], [], tmp_path / "cache")
-    tokens = element(
-        read_model(path), "demo.Widget#combine(int[][],java.lang.String[])"
-    )
+    root = extract([SOURCES], [], tmp_path / "cache").root
+    tokens = element(root, "demo.Widget#combine(int[][],java.lang.String[])")
     sig = tokens.find("sig")
     assert [t.tag for t in sig if t.tag not in {"t"}] == ["k", "r", "n", "params"]
     labels = [p.find("r") for p in sig.find("params")]
@@ -80,8 +78,7 @@ public record R(@Deprecated int old, int now) {
   public void gone() {}
 }
 """)
-    path, _ = extract([tmp_path], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([tmp_path], [], tmp_path / "cache").root
     flagged = {e.get("id") for e in root.iter() if e.get("id") and deprecated(e)}
     assert "p.R#gone()" in flagged
     assert not flagged & {
@@ -102,7 +99,7 @@ public record R(@Deprecated int old, int now) {
     ],
 )
 def test_models_with_invalid_signature_tokens_are_rejected(tmp_path, sig):
-    path, _ = extract([SOURCES], [], tmp_path / "cache")
+    path = extract([SOURCES], [], tmp_path / "cache").path
     text = path.read_text()
     start = text.index("<sig>")
     model = tmp_path / "bad.xml"

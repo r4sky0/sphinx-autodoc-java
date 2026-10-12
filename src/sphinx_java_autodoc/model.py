@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+from typing import NamedTuple
 import xml.etree.ElementTree as ET
 
 from sphinx.errors import ExtensionError
@@ -26,6 +27,14 @@ TYPE_GROUPS = {
 SYMBOLS: dict[str, ET.Element] = {}
 PACKAGES: dict[str, ET.Element] = {}
 REFERENCES: dict[str, dict[str, str]] = {}
+
+
+class Model(NamedTuple):
+    """A validated model, the file it came from and the fingerprint of its inputs."""
+
+    root: ET.Element
+    path: Path
+    fingerprint: str
 
 
 def read_model(path: Path) -> ET.Element:

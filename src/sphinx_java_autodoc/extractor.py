@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 from sphinx.errors import ExtensionError
 
-from .model import read_model
+from .model import Model, read_model
 
 VERSION = "0.2.1"  # x-release-please-version
 DOCLET = Path(__file__).parent / "java" / "SphinxDoclet.java"
@@ -67,8 +67,8 @@ def extract(
     jdk: str = "",
     release: str = "",
     sourcepath: list[Path] | None = None,
-) -> tuple[Path, str]:
-    """Return immutable XML path and input fingerprint. All inputs are content hashed."""
+) -> Model:
+    """Returns the validated model, cached by a content hash of all inputs."""
     roots = [p.resolve() for p in sources]
     dependencies = [p.resolve() for p in classpath]
     lookup = [p.resolve() for p in sourcepath or []]
@@ -171,8 +171,7 @@ def extract(
     cache.mkdir(parents=True, exist_ok=True)
     destination = cache / f"{fingerprint}.xml"
     if destination.exists():
-        read_model(destination)
-        return destination, fingerprint
+        return Model(read_model(destination), destination, fingerprint)
     with tempfile.TemporaryDirectory(prefix="extract-", dir=cache) as directory:
         work = Path(directory)
         classes = work / "classes"
@@ -251,4 +250,4 @@ def extract(
         atomic_write(
             destination, ET.tostring(root, encoding="utf-8", xml_declaration=True)
         )
-    return destination, fingerprint
+    return Model(root, destination, fingerprint)

@@ -5,7 +5,7 @@ import re
 
 from test_integration import element
 
-from sphinx_java_autodoc.extractor import extract, read_model, run
+from sphinx_java_autodoc.extractor import extract, run
 from sphinx_java_autodoc.render import comment
 
 
@@ -54,8 +54,7 @@ def test_inline_and_inherited_return_descriptions_match_standard_doclet(tmp_path
     }
 }
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     output = tmp_path / "standard"
     run(

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from test_integration import element
 
-from sphinx_java_autodoc.extractor import extract, read_model
+from sphinx_java_autodoc.extractor import extract
 
 
 @pytest.mark.parametrize("explicit", [False, True])
@@ -34,8 +34,7 @@ public class Child extends Middle<java.io.IOException> {{
     public void run() throws {exception} {{}}
 }}
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     part = element(root, "Child#run()").find("doc/part[@kind='throws']")
     assert part.get("label") == exception
@@ -59,8 +58,7 @@ public class Child implements Contract {
     public <F extends Exception> void run() throws F {}
 }
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     parts = element(root, "Child#run()").findall("doc/part[@kind='throws']")
     assert len(parts) == 1
@@ -83,8 +81,7 @@ public class Child implements Contract<java.io.IOException> {
     public void run() {}
 }
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert any(
         "Cannot resolve inheritDoc" in d.text for d in root.findall("diagnostic")
     )
@@ -111,8 +108,7 @@ public class Child<X extends Exception, Y extends Exception> implements Contract
     public void run() throws X, Y {}
 }
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     parts = element(root, "Child#run()").findall("doc/part[@kind='throws']")
     assert [(p.get("label"), "".join(p.itertext()).strip()) for p in parts] == [

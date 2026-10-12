@@ -11,13 +11,16 @@ Read [the architecture decision](docs/adr/0001-jdk-doclet-xml-sphinx-domain.md) 
 
 - `src/sphinx_java_autodoc/java/SphinxDoclet.java`: declarations, semantic links,
   signatures, comment tokens and documentation inheritance.
-- `src/sphinx_java_autodoc/extractor.py`: subprocesses, fingerprints and caching.
+- `src/sphinx_java_autodoc/extractor.py`: subprocesses, fingerprints and caching;
+  returns a validated model.
 - `src/sphinx_java_autodoc/model.py`: the API model: XML validation, symbol lookup,
   visibility, member groups and labels.
 - `src/sphinx_java_autodoc/javadoc.py`: external Javadoc links and their configuration.
 - `src/sphinx_java_autodoc/render.py`: comment tokens to docutils/Sphinx nodes.
 - `src/sphinx_java_autodoc/domain.py`: directives, roles, anchors and inventories.
-- `src/sphinx_java_autodoc/__init__.py`: configuration, generated pages and build hooks.
+- `src/sphinx_java_autodoc/pages.py`: generated pages: planning page skeletons from the
+  model, and publishing them with overwrite protection and crash recovery.
+- `src/sphinx_java_autodoc/__init__.py`: configuration, model choice and build hooks.
 - `src/sphinx_java_autodoc/__main__.py`: extraction CLI.
 - `tests/test_integration.py`: real JDK/Sphinx integration tests.
 - `tests/visual_check.py`: opt-in browser checks in six themes, including the showcase

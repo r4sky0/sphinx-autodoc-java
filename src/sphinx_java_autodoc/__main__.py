@@ -8,7 +8,6 @@ import sys
 from sphinx.errors import ExtensionError
 
 from .extractor import atomic_write, extract
-from .model import read_model
 
 
 def main():
@@ -43,7 +42,7 @@ def main():
         cp = args.classpath
         if args.classpath_file:
             cp += os.pathsep + args.classpath_file.read_text(encoding="utf-8").strip()
-        path, _ = extract(
+        model = extract(
             args.sources,
             [Path(p) for p in cp.split(os.pathsep) if p],
             args.cache,
@@ -51,12 +50,12 @@ def main():
             release=args.release,
             sourcepath=args.sourcepath,
         )
-        diagnostics = read_model(path).findall("diagnostic")
+        diagnostics = model.root.findall("diagnostic")
         for diagnostic in diagnostics:
             print("warning: " + (diagnostic.text or ""), file=sys.stderr)
         if diagnostics and args.warnings_as_errors:
             return 1
-        atomic_write(args.output, path.read_bytes())
+        atomic_write(args.output, model.path.read_bytes())
     except (ExtensionError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         return 1

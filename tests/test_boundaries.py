@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 import pytest
 from sphinx.errors import ExtensionError
 
-import sphinx_java_autodoc as extension
+from sphinx_java_autodoc import pages
 from sphinx_java_autodoc.model import (
     PACKAGES,
     SYMBOLS,
@@ -17,6 +17,14 @@ from sphinx_java_autodoc.model import (
     use_model,
     visible,
 )
+
+
+def published(name):
+    """Three generated pages, as planned for one type named ``name``."""
+    return {
+        filename: f"{name}\n"
+        for filename in ("index.rst", "package-demo.rst", f"type-demo.{name}.rst")
+    }
 
 
 def model(*names):
@@ -99,8 +107,8 @@ def test_model_finds_symbols_and_labels():
 def test_generation_recovers_after_each_publication_step(
     tmp_path, monkeypatch, failure
 ):
-    extension.generate_pages(model("Old"), tmp_path, "public")
-    write = extension.atomic_write
+    pages.publish_pages(tmp_path, published("Old"))
+    write = pages.atomic_write
     calls = 0
 
     def interrupt(path, data):
@@ -111,24 +119,24 @@ def test_generation_recovers_after_each_publication_step(
         write(path, data)
 
     with monkeypatch.context() as patch:
-        patch.setattr(extension, "atomic_write", interrupt)
+        patch.setattr(pages, "atomic_write", interrupt)
         with pytest.raises(OSError, match="interrupted"):
-            extension.generate_pages(model("New"), tmp_path, "public")
+            pages.publish_pages(tmp_path, published("New"))
     # Recovery also handles a different model on the next build.
-    extension.generate_pages(model("Final"), tmp_path, "public")
+    pages.publish_pages(tmp_path, published("Final"))
     assert {p.name for p in tmp_path.glob("*.rst")} == {
         "index.rst",
         "package-demo.rst",
         "type-demo.Final.rst",
     }
-    extension.generate_pages(model("Final"), tmp_path, "public")
+    pages.publish_pages(tmp_path, published("Final"))
     manifest = json.loads((tmp_path / ".java-autodoc-manifest.json").read_text())
     assert all(isinstance(value, str) for value in manifest.values())
 
 
 def test_recovery_preserves_user_edits(tmp_path, monkeypatch):
-    extension.generate_pages(model("Old"), tmp_path, "public")
-    write = extension.atomic_write
+    pages.publish_pages(tmp_path, published("Old"))
+    write = pages.atomic_write
     calls = 0
 
     def interrupt(path, data):
@@ -139,13 +147,13 @@ def test_recovery_preserves_user_edits(tmp_path, monkeypatch):
         write(path, data)
 
     with monkeypatch.context() as patch:
-        patch.setattr(extension, "atomic_write", interrupt)
+        patch.setattr(pages, "atomic_write", interrupt)
         with pytest.raises(OSError):
-            extension.generate_pages(model("New"), tmp_path, "public")
+            pages.publish_pages(tmp_path, published("New"))
     edited = tmp_path / "type-demo.New.rst"
     edited.write_text("Handwritten content")
     with pytest.raises(ExtensionError, match="refusing to overwrite"):
-        extension.generate_pages(model("Final"), tmp_path, "public")
+        pages.publish_pages(tmp_path, published("Final"))
     assert edited.read_text() == "Handwritten content"
 
 
@@ -155,5 +163,5 @@ def test_recovery_preserves_user_edits(tmp_path, monkeypatch):
 def test_invalid_manifest_is_rejected(tmp_path, manifest):
     (tmp_path / ".java-autodoc-manifest.json").write_text(json.dumps(manifest))
     with pytest.raises(ExtensionError, match="invalid generated-page manifest"):
-        extension.generate_pages(model("A"), tmp_path, "public")
+        pages.publish_pages(tmp_path, published("A"))
     assert not list(tmp_path.glob("*.rst"))

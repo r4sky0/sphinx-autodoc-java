@@ -6,7 +6,7 @@ import re
 from docutils import nodes
 from test_integration import build, element
 
-from sphinx_java_autodoc.extractor import extract, read_model, run
+from sphinx_java_autodoc.extractor import extract, run
 from sphinx_java_autodoc.render import comment
 
 CONSTANTS = """package demo;
@@ -73,8 +73,7 @@ def test_value_tags_render_constant_expressions_like_the_standard_doclet(tmp_pat
     source = tmp_path / "demo" / "Constants.java"
     source.parent.mkdir()
     source.write_text(CONSTANTS)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
 
     body = element(root, "demo.Constants").find("doc/part[@kind='body']")
@@ -128,7 +127,7 @@ def test_value_tags_link_in_sphinx_builds(tmp_path):
     source = tmp_path / "demo" / "Constants.java"
     source.parent.mkdir()
     source.write_text(CONSTANTS)
-    path, _ = extract([source], [], tmp_path / "cache")
+    path = extract([source], [], tmp_path / "cache").path
     docs = tmp_path / "docs"
     docs.mkdir()
     (docs / "conf.py").write_text(
@@ -167,8 +166,7 @@ public class Bad {
   public void method() {}
 }
 """)
-    path, _ = extract([source], [], tmp_path / "cache")
-    root = read_model(path)
+    root = extract([source], [], tmp_path / "cache").root
     messages = "\n".join(d.text for d in root.findall("diagnostic"))
     assert "Unresolved Javadoc reference Missing#X" in messages
     assert "{@value #O} must reference a constant field" in messages
