@@ -119,5 +119,6 @@ not succeeded, you can also dispatch Release manually and select the existing
 tag. Dispatching against a branch deliberately fails validation.
 
 GitHub Pages uses the built documentation artifact from a successful `main` push.
-PRs build docs for validation without deploying. GitHub environments restrict
+Each open same-repository PR is also published at `pr-preview/pr-<number>/`
+after its CI passes, with a link commented on the PR; fork PRs are not deployed. GitHub environments restrict
 Pages to `main` and PyPI publishing to `v*` tags.
