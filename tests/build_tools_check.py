@@ -113,8 +113,11 @@ def main():
                 ],
                 env={**os.environ, "PATH": ""},
             )
-            html = (work / "html/api/type-demo.Consumer.html").read_text()
-            assert "labelled" in html and "org.apache.commons.lang3.tuple.Pair" in html
+            html = (work / "html/api/type-demo.Consumer.html").read_text(
+                encoding="utf-8"
+            )
+            pair = "commons-lang/apidocs/org/apache/commons/lang3/tuple/Pair.html"
+            assert "labelled" in html and pair in html
             assert (work / "html/api/type-demo.BuildInfo.html").exists()
             print(
                 f"{tool}: strict extraction and JDK-free Sphinx rendering passed",
