@@ -139,3 +139,18 @@ def test_summary_is_the_first_sentence(tokens, expected):
         f'<type><doc><part kind="body">{tokens}</part></doc></type>'
     )
     assert nodes.paragraph("", "", *summary(element, None)).astext() == expected
+
+
+def test_summaries_do_not_repeat_unresolved_link_warnings(tmp_path):
+    source = tmp_path / "src" / "Links.java"
+    source.parent.mkdir()
+    source.write_text(
+        "/** Links. */\npublic class Links {\n"
+        "  private int hidden;\n"
+        "  /** Returns {@link #hidden}. More. */\n"
+        "  public int value() { return hidden; }\n}\n"
+    )
+    output = build(
+        project(tmp_path, sources=source.parent), tmp_path / "html", success=False
+    )
+    assert output.count("reference target not found: Links#hidden") == 1

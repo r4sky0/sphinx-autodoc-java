@@ -13,6 +13,7 @@ from sphinx.util import logging
 
 from .domain import MEMBER_GROUPS, TYPE_GROUPS, JavaDomain, member_group
 from .extractor import VERSION, atomic_write, extract, read_model
+from .render import quiet_reference
 
 __version__ = VERSION
 LOGGER = logging.getLogger(__name__)
@@ -225,6 +226,7 @@ def setup(app):
     app.connect("builder-inited", add_static_path)
     app.connect("builder-inited", prepare)
     app.connect("env-get-outdated", outdated)
+    app.connect("missing-reference", quiet_reference)
     return {
         "version": VERSION,
         "env_version": 2,

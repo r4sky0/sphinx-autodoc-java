@@ -389,7 +389,16 @@ def summary(element: ET.Element, location) -> list[nodes.Node]:
                 break
         return copy
 
-    return truncate(content[0]).children
+    sentence = truncate(content[0])
+    # The full description reports unresolved links; the summary repeats them quietly.
+    for reference in sentence.findall(addnodes.pending_xref):
+        reference["java:quiet"] = True
+    return sentence.children
+
+
+def quiet_reference(app, env, node, contnode):
+    """Sphinx missing-reference handler: summary links fall back to their text."""
+    return contnode if node.get("java:quiet") else None
 
 
 def documentation(element: ET.Element, location) -> list[nodes.Node]:
