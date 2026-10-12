@@ -1,6 +1,7 @@
 # sphinx-java-autodoc
 
 [![CI](https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml/badge.svg)](https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sphinx-java-autodoc)](https://pypi.org/project/sphinx-java-autodoc/)
 [Documentation](https://r4sky0.github.io/sphinx-java-autodoc/)
 
 Publish your Java library's guides and API reference in one searchable Sphinx
