@@ -20,7 +20,7 @@ Design records
 These live in the repository:
 
 * `Architecture decision and alternatives considered
-  <https://github.com/r4sky0/sphinx-java-autodoc/blob/main/docs/adr-001.md>`_
+  <https://github.com/r4sky0/sphinx-java-autodoc/blob/main/docs/adr/0001-jdk-doclet-xml-sphinx-domain.md>`_
 * `XML model schema
   <https://github.com/r4sky0/sphinx-java-autodoc/blob/main/docs/schema.md>`_
 * `Roadmap <https://github.com/r4sky0/sphinx-java-autodoc/blob/main/docs/roadmap.md>`_
