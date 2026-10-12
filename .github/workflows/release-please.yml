@@ -33,8 +33,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          PR_BRANCH: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
-        run: gh workflow run ci.yml --ref "$PR_BRANCH"
+          RELEASE_PR: ${{ steps.release.outputs.pr }}
+        run: gh workflow run ci.yml --ref "$(jq -r .headBranchName <<< "$RELEASE_PR")"
       - name: Publish the tagged release
         if: steps.release.outputs.release_created == 'true'
         env:
