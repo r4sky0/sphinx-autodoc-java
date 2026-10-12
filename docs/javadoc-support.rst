@@ -10,7 +10,10 @@ Tags and HTML
 
 Supported traditional Javadoc content includes descriptions, ``@param`` (including
 type parameters), ``@return``, ``@throws``/``@exception``, ``@see``, ``@since`` and
-``@deprecated``. Inline ``code``, ``literal``, ``link``, ``linkplain``, ``value`` and
+``@deprecated``, plus the JDK's ``@apiNote``, ``@implSpec`` and ``@implNote`` notes,
+which use the standard doclet's headings and are not inherited. ``@author``,
+``@version`` and the ``@serial`` tags are omitted without a warning, as the standard
+doclet does by default; other custom tags warn. Inline ``code``, ``literal``, ``link``, ``linkplain``, ``value`` and
 ``inheritDoc`` are processed from compiler trees. HTML paragraphs, nested
 ordered/unordered lists, tables, preformatted code, emphasis, strong text and absolute HTTP(S)/mailto links become
 native nodes. Literal text is never interpreted as RST, and raw HTML is not emitted.

@@ -414,6 +414,10 @@ FIELD_TITLES = {
     "throws": "Throws",
     "see": "See also",
     "since": "Since",
+    # The standard doclet's headings for the JDK's custom note tags.
+    "apiNote": "API Note",
+    "implSpec": "Implementation Requirements",
+    "implNote": "Implementation Note",
 }
 
 

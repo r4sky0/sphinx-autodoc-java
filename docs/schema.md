@@ -27,7 +27,8 @@ not a general XML document interchange service. No external entities are fetched
   attribute of earlier development models was dropped before the first release;
   regenerate such models.
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
-  `since`, `deprecated`) and a `label`. Parameter labels follow the child declaration
+  `since`, `deprecated`, `apiNote`, `implSpec`, `implNote`) and a `label`. The three
+  note kinds are additive in schema 1: older renderers show them under their kind name. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.
   Throws labels name the overriding method's exception after generic substitution;
   type variables use their declared names. This preserves the schema 1 structure.
