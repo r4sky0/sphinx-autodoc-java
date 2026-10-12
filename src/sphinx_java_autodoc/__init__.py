@@ -6,13 +6,13 @@ import hashlib
 import json
 from pathlib import Path
 import re
-from urllib.parse import urlsplit
 
 from sphinx.errors import ExtensionError
 from sphinx.util import logging
 
 from .domain import JavaDomain
 from .extractor import VERSION, atomic_write, extract
+from .javadoc import check_mapping
 from .model import (
     MEMBER_GROUPS,
     TYPE_GROUPS,
@@ -150,11 +150,7 @@ def prepare(app):
         raise ExtensionError(
             "java_visibility must be 'public' or 'protected' (public plus protected)."
         )
-    for prefix, url in config.java_external_javadoc.items():
-        if not prefix or urlsplit(url).scheme not in {"http", "https"}:
-            raise ExtensionError(
-                "java_external_javadoc must map package prefixes to http(s) Javadoc roots."
-            )
+    check_mapping(config.java_external_javadoc)
     base = Path(app.confdir)
     if config.java_model and config.java_sources:
         raise ExtensionError("Set either java_sources or java_model, not both.")
