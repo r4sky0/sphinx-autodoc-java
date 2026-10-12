@@ -158,7 +158,7 @@ def test_summaries_do_not_repeat_unresolved_link_warnings(tmp_path):
 
 
 def test_search_finds_members_by_name_first(site):
-    script = (site / "searchindex.js").read_text()
+    script = (site / "searchindex.js").read_text(encoding="utf-8")
     index = json.loads(script[script.index("(") + 1 : script.rindex(")")])
     entries = {entry[4]: entry for entry in index["objects"]["demo.Widget"]}
     assert entries["convert(int)"][2] == 0
@@ -169,7 +169,7 @@ def test_search_finds_members_by_name_first(site):
 
 
 def test_repeated_fields_are_grouped(site):
-    html = (site / "api/type-demo.Widget.html").read_text()
+    html = (site / "api/type-demo.Widget.html").read_text(encoding="utf-8")
     method = html[
         html.index('id="' + anchor("demo.Widget#combine(int[][],java.lang.String[])")) :
     ]
