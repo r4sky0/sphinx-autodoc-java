@@ -27,6 +27,14 @@ that file; ``java_generate`` is relative to the Sphinx source directory.
    * - ``java_classpath``
      - ``[]``
      - Existing dependency JARs or class directories. No wildcard expansion.
+   * - ``java_encoding``
+     - ``"UTF-8"``
+     - Encoding of the Java source files, as Javadoc's ``-encoding`` accepts it.
+   * - ``java_exclude_packages``
+     - ``[]``
+     - Packages left out of the API pages together with their subpackages, like
+       Javadoc's ``-exclude``. They still compile, and an entry that matches no
+       package warns.
    * - ``java_jdk``
      - ``""``
      - JDK 25 home; empty selects the runtime on ``PATH``.

@@ -75,6 +75,8 @@ project root, with JDK 25 available:
      --cache build/java-cache -o build/api.xml
 
 Add ``--classpath-file build/classpath.txt`` when dependencies are needed.
+``--encoding`` and repeated ``--exclude-package`` arguments match the
+``java_encoding`` and ``java_exclude_packages`` settings.
 CLI paths are relative to the working directory. Then configure ``docs/conf.py``:
 
 .. code-block:: python
@@ -235,6 +237,7 @@ For direct doclet invocation, locate and compile the bundled source::
      --sphinx-output build/api.xml -sourcepath src/main/java \
      -classpath lib/dependency.jar com.example
 
+The doclet's ``--sphinx-exclude`` option takes excluded packages separated by commas.
 Prefer the Python CLI for content caching, atomic output and warning handling.
 The direct command takes ordinary Javadoc package or file inputs and does not
 provide the Python wrapper's cache or publication safeguards.
