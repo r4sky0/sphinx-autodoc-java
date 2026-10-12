@@ -4,7 +4,7 @@ Java API: Apache Commons Lang
 Browse the API in
 `Furo <showcase/commons-lang/furo/index.html>`__,
 `Read the Docs <showcase/commons-lang/rtd/index.html>`__,
-`PyData <showcase/commons-lang/pydata/index.html>`__ or
+`Alabaster <showcase/commons-lang/alabaster/index.html>`__ or
 `Lumina <showcase/commons-lang/lumina/index.html>`__: the same generated pages in four
 themes, with no theme-specific configuration. It's version |showcase-version| of
 `Apache Commons Lang

@@ -147,7 +147,7 @@ jobs:
       - run: uv run --locked --extra test --group showcase playwright install --with-deps chromium
       - name: Build the standalone fixture site in every checked theme
         run: |
-          for theme in alabaster classic furo sphinx_rtd_theme pydata_sphinx_theme lumina; do
+          for theme in alabaster classic furo sphinx_rtd_theme lumina; do
             output=$theme
             if [ "$theme" = alabaster ]; then output=html; fi
             uv run --locked --extra test --group showcase sphinx-build -W --keep-going -n \
