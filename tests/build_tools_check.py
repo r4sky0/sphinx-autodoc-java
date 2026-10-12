@@ -91,7 +91,10 @@ def main():
             (docs / "conf.py").write_text(
                 "extensions = ['sphinx_java_autodoc']\njava_generate = 'api'\n"
                 f"java_model = {str(model)!r}\n"
-                "java_external_javadoc = {'java': 'https://docs.oracle.com/en/java/javase/25/docs/api/{module}/'}\n"
+                "java_external_javadoc = {\n"
+                "    'java': 'https://docs.oracle.com/en/java/javase/25/docs/api/{module}/',\n"
+                "    'org.apache.commons.lang3': 'https://commons.apache.org/proper/commons-lang/apidocs/',\n"
+                "}\n"
             )
             (docs / "index.rst").write_text(
                 "Consumer\n========\n\n.. toctree::\n\n   api/index\n"
