@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -67,6 +68,13 @@ def read_model(path: Path) -> ET.Element:
             raise ValueError(
                 "expected API XML schema 1; regenerate with sphinx-java-autodoc"
             )
+        packages = [p.get("name") for p in root.findall("package")]
+        qualified = r"[\w$]+(?:\.[\w$]+)*"
+        if any(p is None or (p and not re.fullmatch(qualified, p)) for p in packages):
+            raise ValueError("invalid package name")
+        if len(set(packages)) != len(packages):
+            raise ValueError("duplicate package")
+        owners = {id(m): t for t in root.findall("type") for m in t.findall("member")}
         ids = set()
         for node in root.findall("type") + root.findall("type/member"):
             for key in ("id", "name", "kind", "visibility", "package", "signature"):
@@ -77,6 +85,54 @@ def read_model(path: Path) -> ET.Element:
             ids.add(node.attrib["id"])
             if node.get("visibility") not in {"public", "protected"}:
                 raise ValueError("invalid visibility")
+            symbol, name, kind, package = (
+                node.get(key) for key in ("id", "name", "kind", "package")
+            )
+            if not name or not node.get("signature").strip():
+                raise ValueError("empty declaration name or signature")
+            if package not in packages:
+                raise ValueError(f"undeclared package {package!r} for {symbol}")
+            if node.tag == "type":
+                if kind not in {
+                    "class",
+                    "interface",
+                    "enum",
+                    "record",
+                    "annotation_type",
+                }:
+                    raise ValueError(f"invalid type kind {kind!r}")
+                local = symbol.removeprefix(package + ".") if package else symbol
+                if (
+                    not re.fullmatch(qualified, local)
+                    or local.rsplit(".", 1)[-1] != name
+                    or (package and not symbol.startswith(package + "."))
+                ):
+                    raise ValueError(f"invalid type identity {symbol!r}")
+            else:
+                owner = owners[id(node)]
+                if package != owner.get("package") or not symbol.startswith(
+                    owner.get("id") + "#"
+                ):
+                    raise ValueError(f"invalid member owner for {symbol!r}")
+                suffix = symbol.split("#", 1)[1]
+                if kind in {"method", "constructor"}:
+                    parameter = qualified + r"(?:\[\])*"
+                    pattern = (
+                        re.escape(name) + rf"\((?:{parameter}(?:,{parameter})*)?\)"
+                    )
+                    valid = re.fullmatch(pattern, suffix) and (
+                        name == "<init>"
+                        if kind == "constructor"
+                        else re.fullmatch(r"[\w$]+", name)
+                    )
+                else:
+                    valid = (
+                        kind in {"field", "enum_constant", "record_component"}
+                        and suffix == name
+                        and re.fullmatch(r"[\w$]+", name)
+                    )
+                if not valid:
+                    raise ValueError(f"invalid member identity or kind for {symbol!r}")
         return root
     except (OSError, ET.ParseError, ValueError) as exc:
         raise ExtensionError(f"Java autodoc: invalid model {path}: {exc}") from exc
