@@ -66,7 +66,9 @@ def generate_pages(root, directory: Path, visibility: str) -> None:
                 raise ExtensionError(f"Java autodoc: invalid type name {symbol!r}")
             typefile = "type-" + symbol
             body += f"   {typefile}\n"
-            page = heading(symbol, "=") + f".. java:autoclass:: {symbol}\n\n"
+            # Titles drop the package, which the sidebar and the signature already show.
+            type_title = symbol[len(name) + 1 :] if name else symbol
+            page = heading(type_title, "=") + f".. java:autoclass:: {symbol}\n\n"
             members = [m for m in t.findall("member") if visible(m, visibility)]
             for group, title in MEMBER_GROUPS.items():
                 symbols = [m.get("id") for m in members if member_group(m) == group]
