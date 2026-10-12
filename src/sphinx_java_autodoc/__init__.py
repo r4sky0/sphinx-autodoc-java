@@ -11,15 +11,17 @@ from urllib.parse import urlsplit
 from sphinx.errors import ExtensionError
 from sphinx.util import logging
 
-from .domain import (
+from .domain import JavaDomain
+from .extractor import VERSION, atomic_write, extract
+from .model import (
     MEMBER_GROUPS,
     TYPE_GROUPS,
-    JavaDomain,
-    member_group,
+    grouped,
+    local_name,
+    read_model,
     use_model,
     visible,
 )
-from .extractor import VERSION, atomic_write, extract, read_model
 from .render import quiet_reference
 
 __version__ = VERSION
@@ -67,15 +69,13 @@ def generate_pages(root, directory: Path, visibility: str) -> None:
             typefile = "type-" + symbol
             body += f"   {typefile}\n"
             # Titles drop the package, which the sidebar and the signature already show.
-            type_title = symbol[len(name) + 1 :] if name else symbol
-            page = heading(type_title, "=") + f".. java:autoclass:: {symbol}\n\n"
+            page = heading(local_name(t), "=") + f".. java:autoclass:: {symbol}\n\n"
             members = [m for m in t.findall("member") if visible(m, visibility)]
-            for group, title in MEMBER_GROUPS.items():
-                symbols = [m.get("id") for m in members if member_group(m) == group]
-                if symbols:
-                    directive = "autofield" if group == "field" else "automethod"
-                    page += heading(title, "-") + summary_table(symbols)
-                    page += "".join(f".. java:{directive}:: {s}\n\n" for s in symbols)
+            for group, found in grouped(members).items():
+                symbols = [m.get("id") for m in found]
+                directive = "autofield" if group == "field" else "automethod"
+                page += heading(MEMBER_GROUPS[group], "-") + summary_table(symbols)
+                page += "".join(f".. java:{directive}:: {s}\n\n" for s in symbols)
             pages[typefile + ".rst"] = MARKER + page
         pages[filename + ".rst"] = MARKER + body
     named = [name for name, _ in entries if name]

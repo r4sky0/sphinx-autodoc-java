@@ -7,7 +7,16 @@ import pytest
 from sphinx.errors import ExtensionError
 
 import sphinx_java_autodoc as extension
-from sphinx_java_autodoc.extractor import read_model
+from sphinx_java_autodoc.model import (
+    PACKAGES,
+    SYMBOLS,
+    grouped,
+    local_name,
+    member_label,
+    read_model,
+    use_model,
+    visible,
+)
 
 
 def model(*names):
@@ -71,6 +80,19 @@ def test_model_rejects_missing_or_empty_signature(tmp_path, tag):
         path.write_bytes(ET.tostring(root))
         with pytest.raises(ExtensionError, match=message):
             read_model(path)
+
+
+def test_model_finds_symbols_and_labels():
+    root = model("A", "B")
+    root.find("type").set("visibility", "protected")
+    use_model(root)
+    a, run = SYMBOLS["demo.A"], SYMBOLS["demo.B#run()"]
+    assert (a.tag, run.tag) == ("type", "member")
+    assert "demo.Missing" not in SYMBOLS and set(PACKAGES) == {"demo"}
+    assert not visible(a, "public") and visible(a, "protected")
+    assert [local_name(a), local_name(run)] == ["A", "run()"]
+    assert member_label("demo.A#<init>(java.lang.String,int[])") == "A(String, int[])"
+    assert list(grouped(a.findall("member"))) == ["method"]
 
 
 @pytest.mark.parametrize("failure", range(1, 6))
