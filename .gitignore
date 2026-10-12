@@ -6,6 +6,7 @@ build/
 dist/
 docs/_build/
 docs/api/
+docs/gallery/api/
 examples/**/target/
 examples/**/build/
 examples/**/docs/_build/

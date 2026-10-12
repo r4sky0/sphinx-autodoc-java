@@ -4,4 +4,4 @@ import java.time.Instant;
  * @param x horizontal coordinate
  * @param at time supplied by the standard-library dependency
  */
-public record Point(int x, Instant at) {}
+public record Point(int x, Instant at) implements Shape {}

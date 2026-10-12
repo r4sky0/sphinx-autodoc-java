@@ -5,7 +5,8 @@ This site is a showcase for `sphinx-java-autodoc
 <https://github.com/r4sky0/sphinx-java-autodoc>`_: the complete public API of
 `Apache Commons Lang <https://commons.apache.org/proper/commons-lang/>`_, generated
 from its unmodified Java sources at commit |commit| without compiling or running
-the library. Links to JDK types point to Oracle's Javadoc.
+the library. Links to JDK types point to Oracle's Javadoc, and each declaration's
+``[source]`` link opens its line on GitHub at that commit.
 
 Apache Commons Lang is developed by the Apache Software Foundation and licensed
 under the `Apache License 2.0 <https://www.apache.org/licenses/LICENSE-2.0>`_. This

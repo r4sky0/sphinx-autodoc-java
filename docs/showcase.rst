@@ -13,7 +13,9 @@ generated from unmodified sources. Apache Commons Lang is licensed under the Apa
 License 2.0; this site is not affiliated with the Apache Software Foundation.
 
 It uses the :doc:`getting-started` configuration plus ``java_external_javadoc`` for
-JDK links. The build reports |showcase-total| warnings:
+JDK links and ``sphinx.ext.linkcode`` for :ref:`source links <source-links>` to
+GitHub at the pinned commit. For an example of every feature, see the
+:doc:`gallery/index`. The build reports |showcase-total| warnings:
 
 - |showcase-java.extract| ``java.extract``: overrides of JDK methods that cannot
   inherit their documentation, and links to libraries not on the classpath.
