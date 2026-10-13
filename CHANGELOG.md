@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.3.0...v0.4.0) (2026-10-13)
+
+
+### Features
+
+* note overridden methods and summarize members with their modifiers and type ([#47](https://github.com/r4sky0/sphinx-java-autodoc/issues/47)) ([9ae1723](https://github.com/r4sky0/sphinx-java-autodoc/commit/9ae172326f597af89e5967cc791200a3b08223dd))
+
+
+### Bug Fixes
+
+* render links, throws, type parameters, annotations and quotes as the standard doclet does ([#46](https://github.com/r4sky0/sphinx-java-autodoc/issues/46)) ([0c91ca9](https://github.com/r4sky0/sphinx-java-autodoc/commit/0c91ca9ed5dfe65c5f6fcefa000b7e25c8d13e41))
+
 ## [0.3.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.2.1...v0.3.0) (2026-10-13)
 
 
