@@ -177,6 +177,14 @@ def test_html_links_structure_inventory_search(site):
     assert "the text overload" in html
     assert "Deprecated" in html and "Since" in html
     assert "Constructors" in html and "Fields and constants" in html
+    note = html.index(
+        "Specified by", html.index(anchor("demo.Widget#convert(java.lang.String)"))
+    )
+    assert (
+        'href="type-demo.Transformer.html#'
+        + anchor("demo.Transformer#convert(java.lang.Object)")
+        in html[note : note + 600]
+    )
     transformer = (out / "api/type-demo.Transformer.html").read_text()
     for title in ("API Note", "Implementation Requirements", "Implementation Note"):
         assert title in transformer

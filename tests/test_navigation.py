@@ -82,12 +82,18 @@ def test_type_pages_have_sections_with_summaries(site):
     page = parse(site / "api/type-demo.Widget.html")
     assert page.headings == ["Constructors", "Fields and constants", "Methods"]
     constructors, fields, methods = page.tables
-    assert [row[1] for row in constructors] == ["Widget()", "Widget(String)"]
-    by_name = {row[1]: row for row in methods}
-    assert by_name["convert(int)"][0] == "#" + anchor("demo.Widget#convert(int)")
+    assert [row[1] for row in constructors] == ["Widget()", "Widget(String label)"]
+    # Methods and fields lead with Javadoc's "Modifier and Type" column, whose types
+    # link like signatures: [type links..., type, member link, label, summary].
+    by_name = {row[-2]: row for row in methods}
+    convert = by_name["convert(int number)"]
+    assert convert[-3] == "#" + anchor("demo.Widget#convert(int)")
+    assert convert[-4] == "String" and convert[0].endswith("java/lang/String.html")
     # Summaries keep straight quotes too.
-    assert by_name["convert(int)"][2] == 'Converts a number to text, such as "42"...'
-    assert by_name["old()"][2] == "Deprecated. Old entry point."
+    assert convert[-1] == 'Converts a number to text, such as "42"...'
+    assert by_name["old()"][-1] == "Deprecated. Old entry point."
+    assert by_name["old()"][0] == "void"
+    assert {row[-2]: row[-4] for row in fields}["LABEL"] == "static final String"
 
 
 def test_type_pages_are_titled_without_the_package(site):

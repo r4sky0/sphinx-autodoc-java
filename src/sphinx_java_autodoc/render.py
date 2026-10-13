@@ -411,6 +411,8 @@ def quiet_reference(app, env, node, contnode):
 
 
 FIELD_TITLES = {
+    "specifiedBy": "Specified by",
+    "overrides": "Overrides",
     "param": "Parameters",
     "typeparam": "Type parameters",
     "return": "Returns",
@@ -457,6 +459,11 @@ def documentation(element: ET.Element, location) -> list[nodes.Node]:
     for part in element.findall("doc/part"):
         content = comment(part, location)
         kind = part.get("kind")
+        if kind in {"specifiedBy", "overrides"}:
+            # Ancestors outside the documented API stay text, as in summaries.
+            for node in content:
+                for xref in node.findall(addnodes.pending_xref):
+                    xref["java:quiet"] = True
         if kind == "body":
             result.extend(content)
         elif kind == "deprecated":
