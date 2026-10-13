@@ -1,15 +1,11 @@
 Compatibility and limits
 ========================
 
-This page is the single record of what has been tested and what is not supported.
-Configured CI jobs and recipes do not widen these claims until they have passed.
+What has been tested, and what is not supported. A configured CI job does not
+count until it has passed.
 
 Requirements and tested versions
 --------------------------------
-
-**Projects targeting Java 17, 21 and 25 are tested. Documentation extraction
-requires JDK 25**, even when your library builds and runs on an older Java release.
-Your library's own toolchain can stay as it is.
 
 .. list-table::
    :header-rows: 1
@@ -47,17 +43,12 @@ Your library's own toolchain can stay as it is.
      - Sphinx ``-j``
      - ``-j 2``, with an inventory identical to ``-j 1``
 
-Put JDK 25's ``java``, ``javac`` and ``javadoc`` on ``PATH``, or set ``java_jdk``
-to its home directory. A site that only renders a pre-extracted model or consumes
-another site's inventory needs no JDK.
-
 Not tested
 ----------
 
 * Other JDK runtimes, Sphinx releases, Firefox and WebKit, PDF/LaTeX and EPUB
   builders.
-* Large multi-module projects. A measured single-library workload is recorded in
-  :doc:`performance`; its warnings prevent a claim of complete Javadoc fidelity.
+* Large multi-module projects. :doc:`performance` records one single-library run.
 * Availability of remote Javadoc sites behind ``java_external_javadoc`` URLs.
 
 Known limits
@@ -71,9 +62,8 @@ Known limits
 * Only declared members are shown. Non-overridden inherited methods stay on their
   ancestor's page. Compiler-generated record and enum methods are listed, but the
   standard doclet's generated prose for them is not synthesized.
-* Signatures are display text rather than individually clickable type tokens.
-  Links in comments and explicit Java roles are native references. Manual Java
-  declaration directives are not provided.
+* Manual Java declaration directives are not provided; declarations come only
+  from the extracted model through the ``java:auto*`` directives.
 * External links use the Javadoc 9+ URL structure; Javadoc 8 member anchors are not
   supported. Roles mapped to external Javadoc without compiler metadata cannot
   check that the symbol exists.
@@ -90,17 +80,12 @@ Evidence
 --------
 
 The `CI workflow <https://github.com/r4sky0/sphinx-java-autodoc/actions/workflows/ci.yml>`_
-runs the operating system and Python matrix, the real JDK and Sphinx integration
-tests, packaging checks against the installed wheel, strict builds in six themes
-and the Chromium browser checks. Browser screenshots are kept as run artifacts.
-The integration tests compare constructor, generic, array and varargs anchors with
-actual standard Javadoc output, check byte-for-byte XML determinism across checkout
-locations, and confirm that extraction executes neither static initializers nor
-annotation processors.
+runs the operating system and Python matrix, the JDK and Sphinx integration tests
+against the installed wheel, strict builds and Chromium checks in five themes. The
+tests compare anchors with real standard-doclet output, check that the XML is
+byte-identical across checkout locations, and check that extraction runs neither
+static initializers nor annotation processors.
 
-Consumer builds executed on 2026-10-11: Maven 3.10.0 and Gradle 9.1.0, Temurin
-25.0.3, Python 3.12.13 and Sphinx 9.1.0 on macOS 26.4.1 arm64. Both compiled
-Commons Lang 3.21.0 consumers and a generated source, exported the dependency
-classpath, extracted strictly, and passed a strict parallel Sphinx build with an
-empty PATH. CI repeats the consumer check on Linux; its configured job alone is
-not additional validation evidence.
+The Maven and Gradle consumers last passed on 2026-10-11 with Maven 3.10.0,
+Gradle 9.1.0, Temurin 25.0.3, Python 3.12.13 and Sphinx 9.1.0 on macOS 26.4.1
+arm64, including a strict parallel Sphinx build with an empty ``PATH``.

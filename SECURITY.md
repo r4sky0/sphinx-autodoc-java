@@ -1,7 +1,7 @@
 # Security
 
-Security fixes target the latest published version. Until the first publication,
-use the latest `main` commit and review the known limits in
+Security fixes target the latest version published on
+[PyPI](https://pypi.org/project/sphinx-java-autodoc/). Known limits are recorded in
 `docs/compatibility.rst`.
 
 Report vulnerabilities privately through

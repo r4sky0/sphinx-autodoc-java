@@ -1,13 +1,10 @@
-Choosing a tool
-===============
+Compare with other tools
+========================
 
 Several tools put Java API documentation into Sphinx, and a plain Javadoc site is
-always an option. This page shows how they compare so you can pick the one that
-fits your project, even if that isn't this extension.
-
-The other tools were assessed in October 2026 by reading their documentation and
-source code, not by running them. If something here is out of date, please
-`open an issue <https://github.com/r4sky0/sphinx-java-autodoc/issues>`_.
+always an option. The other tools were assessed in October 2026 from their
+documentation and source code, without running them. If something is out of date,
+please `open an issue <https://github.com/r4sky0/sphinx-java-autodoc/issues>`_.
 
 At a glance
 -----------
