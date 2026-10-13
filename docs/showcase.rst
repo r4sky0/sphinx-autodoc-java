@@ -1,5 +1,5 @@
-Java API: Apache Commons Lang
-=============================
+Example: Apache Commons Lang
+============================
 
 Browse the API in
 `Furo <showcase/commons-lang/furo/index.html>`__,

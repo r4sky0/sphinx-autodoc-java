@@ -1,15 +1,14 @@
-Configuration and reference
-===========================
+Configuration reference
+=======================
 
-Use this page to look up settings, directive options and link syntax. For a first
-build, start with :doc:`getting-started`. For dependencies and separate extraction,
-see :doc:`build-integration`.
+Settings, directive options and link syntax. For a first build, start with
+:doc:`getting-started`.
 
 Sphinx configuration
 --------------------
 
-Set these values in ``conf.py``. Source, source lookup, classpath and model paths are relative to
-that file; ``java_generate`` is relative to the Sphinx source directory.
+Set these in ``conf.py``. Paths are relative to ``conf.py``, except
+``java_generate``, which is relative to the Sphinx source directory.
 
 .. list-table::
    :header-rows: 1
@@ -23,62 +22,46 @@ that file; ``java_generate`` is relative to the Sphinx source directory.
      - Java files or source roots; directories are scanned recursively.
    * - ``java_sourcepath``
      - ``[]``
-     - Source lookup directories for dependency comments; not selected for publication.
+     - Source directories used only for lookup and inherited comments; no pages.
    * - ``java_classpath``
      - ``[]``
-     - Existing dependency JARs or class directories. No wildcard expansion.
+     - Dependency JARs or class directories. No wildcards.
    * - ``java_encoding``
      - ``"UTF-8"``
-     - Encoding of the Java source files, as Javadoc's ``-encoding`` accepts it.
+     - Source file encoding, as Javadoc's ``-encoding`` accepts it.
    * - ``java_exclude_packages``
      - ``[]``
-     - Packages left out of the API pages together with their subpackages, like
-       Javadoc's ``-exclude``. They still compile, and an entry that matches no
-       package warns.
+     - Packages, with their subpackages, left out of the pages like Javadoc's
+       ``-exclude``. They still compile; an entry matching no package warns.
    * - ``java_jdk``
      - ``""``
-     - JDK 25 home; empty selects the runtime on ``PATH``.
+     - JDK 25 home; empty uses the runtime on ``PATH``.
    * - ``java_release``
      - ``""``
-     - Source/API release; empty uses the selected JDK's default. Tested: 17, 21, 25.
+     - Source/API release; empty uses the JDK default. Tested: 17, 21, 25.
    * - ``java_generate``
      - ``""``
-     - Subdirectory for generated package/type pages, such as ``"api"``.
-       Empty disables page generation; use explicit directives instead.
+     - Directory for generated pages, such as ``"api"``. Empty generates no pages.
    * - ``java_visibility``
      - ``"protected"``
-     - ``"public"`` for public declarations; ``"protected"`` also includes
-       protected declarations.
+     - ``"public"``, or ``"protected"`` for public plus protected declarations.
    * - ``java_model``
      - ``""``
-     - Pre-extracted XML model; mutually exclusive with ``java_sources``.
+     - Pre-extracted XML model; excludes ``java_sources``.
    * - ``java_external_javadoc``
      - ``{}``
-     - Package prefixes mapped to external Javadoc roots; examples below.
+     - Package prefixes mapped to external Javadoc roots; see below.
    * - ``java_maximum_signature_line_length``
      - ``None``
      - Signatures longer than this put each parameter on its own line. Unset uses
        Sphinx's ``maximum_signature_line_length``.
 
-Empty or missing source roots and missing classpath entries are errors. Leave
-both ``java_sources`` and ``java_model`` unset when only consuming another site's
-Java inventory through intersphinx. Such a site needs no JDK; generating local
-API pages requires extracted types.
+Empty or missing source roots and missing classpath entries are errors. A site that only links to
+another site's Java API through intersphinx leaves ``java_sources`` and
+``java_model`` unset and needs no JDK.
 
-Directives and roles
---------------------
-
-Use a fully qualified type name:
-
-.. code-block:: rst
-
-   .. java:autoclass:: com.example.Widget
-      :members:
-      :visibility: protected
-
-With no ``:members:`` option, only the type declaration and documentation appear.
-An empty ``:members:`` selects all declared public/protected members. A selection
-uses **semicolons** so overloaded signatures can contain commas:
+Directives
+----------
 
 .. code-block:: rst
 
@@ -88,36 +71,15 @@ uses **semicolons** so overloaded signatures can contain commas:
       :visibility: public
       :no-index:
 
-A bare member name selects every overload of that name; an exact signature selects
-one. Use erased fully qualified parameter types and ``[]`` for varargs. Constructors
-use ``<init>(...)``. ``protected`` includes public and protected; ``public`` excludes
-protected declarations. Private and package-private declarations are never exported.
-Public nested types inside protected enclosing types are also excluded in public
-mode. Declaration signatures retain their original modifiers.
-``@hidden`` declarations are omitted. Ancestor methods are not duplicated under each
-subclass; overriding declarations inherit their comments, while other ancestor
-methods remain documented on the declaring type. Nested types have their own pages.
+- Without ``:members:``, only the type's declaration and description appear. An
+  empty ``:members:`` includes all declared members.
+- Separate selected members with **semicolons**, because signatures contain
+  commas. A bare name selects every overload; a signature selects one.
+- ``:no-index:`` renders an excerpt without registering anchors or inventory
+  entries. Use it when the object also has a generated page.
+- Unknown members and duplicate documentation warn.
 
-``:no-index:`` creates an excerpt without registering duplicate anchors or inventory
-entries. Use it when an object also appears in generated pages. Unknown selected
-members and duplicate canonical documentation produce warnings.
-
-.. code-block:: rst
-
-   :java:type:`com.example.Widget`
-   :java:type:`com.example.Widget.Nested`
-   :java:method:`com.example.Widget#find(java.lang.String,int)`
-   :java:method:`com.example.Widget#<init>()`
-   :java:field:`com.example.Widget#LABEL`
-   :java:package:`com.example`
-
-``java:obj`` accepts any kind. Roles require fully qualified names; no import context
-or short-name guessing is used. Omitting a method's parameter list works only when
-there is one documented overload. Ambiguity warns instead of selecting arbitrarily.
-In Java comments, ordinary Javadoc import-sensitive references are compiler-resolved.
-
-Like Sphinx's autodoc and autosummary, there are also directives for single members
-and for summary tables:
+Other directives work the same way:
 
 .. code-block:: rst
 
@@ -131,14 +93,37 @@ and for summary tables:
       com.example.Widget
       com.example.Widget#find(java.lang.String,int)
 
-``java:autosummary`` lists packages, types or members with links and their first
-sentences; unknown entries warn as ``java.summary``. Generated pages are built from
-these directives, and each documented member appears in the page's table of contents.
+``java:autopackage`` renders the ``package-info.java`` comment.
+``java:autosummary`` lists each entry with a link and its first sentence; unknown
+entries warn as ``java.summary``. Generated pages consist of these directives.
 
-``java:autopackage`` renders package comments from ``package-info.java`` and registers
-the package. Set ``java_generate`` to generate its package index and type pages
-automatically. Generated pages are owned through a content-hash manifest. Edited or
-unowned files are never overwritten; put handwritten material outside that directory.
+What gets documented
+--------------------
+
+- Private and package-private declarations are never shown, and ``@hidden``
+  declarations are omitted. ``public`` visibility also omits public types nested in
+  protected types.
+- Only declared members are listed. An overriding method inherits its ancestor's
+  comment; other inherited methods stay on the declaring type's page.
+- Nested types get their own pages.
+
+Roles
+-----
+
+.. code-block:: rst
+
+   :java:type:`com.example.Widget`
+   :java:type:`com.example.Widget.Nested`
+   :java:method:`com.example.Widget#find(java.lang.String,int)`
+   :java:method:`com.example.Widget#<init>()`
+   :java:field:`com.example.Widget#LABEL`
+   :java:package:`com.example`
+
+``java:obj`` accepts any kind. Targets are fully qualified: there are no imports
+or short-name guessing. Parameters are erased, fully qualified types, with ``[]``
+for varargs; constructors are ``<init>``. A method without a parameter list
+resolves only when it has one overload; otherwise it warns. References inside Java
+comments are resolved by the compiler as usual.
 
 .. _source-links:
 
@@ -171,7 +156,7 @@ checking which root contains ``source``.
 External Javadoc and intersphinx
 --------------------------------
 
-Map package prefixes to documentation roots. The longest matching prefix wins:
+Map package prefixes to Javadoc roots; the longest prefix wins:
 
 .. code-block:: python
 
@@ -180,14 +165,12 @@ Map package prefixes to documentation roots. The longest matching prefix wins:
        'vendor.api': 'https://vendor.example/docs/api/',
    }
 
-Compiler-resolved links include package, nested type, module and member metadata.
-``{module}`` is replaced with the referenced module, for example ``java.base``.
-Javadoc 9+ member anchors are supported, including varargs and constructors. Javadoc
-8's dash-style member anchors are deferred. URLs are generated without fetching
-remote documentation or validating that the vendor publishes that symbol.
+``{module}`` becomes the referenced module, such as ``java.base``. Links use the
+Javadoc 9+ URL structure; Javadoc 8 anchors are not supported. URLs are built
+without fetching or checking the remote site.
 
-For roles that have no compiler metadata, map the **exact package** to a root
-without a module placeholder, for example:
+A role that no source comment references has no module metadata. For those, map
+the exact package without ``{module}``:
 
 .. code-block:: python
 
@@ -195,23 +178,17 @@ without a module placeholder, for example:
        'java.lang': 'https://docs.oracle.com/en/java/javase/25/docs/api/java.base/',
    }
 
-This permits ``:java:type:`java.lang.String``` even when no source comment refers
-to it. For external members without metadata, use the published Javadoc fragment spelling,
-including ``...`` for varargs and declared type variables where applicable. This
-manual fallback cannot infer varargs from erased arrays or verify the symbol exists. Prefer compiler-resolved links.
+For external members written by hand, use the Javadoc fragment spelling: ``...``
+for varargs and declared type variables. The extension cannot check these.
 
-Every documented object is exported to ``objects.inv``. A second project can load
-it using standard intersphinx:
+Every documented object is in ``objects.inv``, so another Sphinx project can link
+to it with intersphinx and the same Java roles, without sources or a JDK:
 
 .. code-block:: python
 
    extensions = ['sphinx_java_autodoc', 'sphinx.ext.intersphinx']
    intersphinx_mapping = {
-       'library': ('https://docs.example/library/', '../library-html/objects.inv'),
+       'library': ('https://docs.example/library/', None),
    }
-
-Then use the same Java roles. A roles-only consumer needs no Java sources or JDK.
-Local inventory files make cross-project tests and offline builds deterministic;
-normal intersphinx URL inventories may perform network requests independently.
 
 For supported Javadoc tags, HTML and snippets, see :doc:`javadoc-support`.

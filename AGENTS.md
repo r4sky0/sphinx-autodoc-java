@@ -23,8 +23,8 @@ Read [the architecture decision](docs/adr/0001-jdk-doclet-xml-sphinx-domain.md) 
 - `src/sphinx_java_autodoc/__init__.py`: configuration, model choice and build hooks.
 - `src/sphinx_java_autodoc/__main__.py`: extraction CLI.
 - `tests/test_integration.py`: real JDK/Sphinx integration tests.
-- `tests/visual_check.py`: opt-in browser checks in six themes, including the showcase
-  themes.
+- `tests/visual_check.py`: opt-in browser checks in five themes, including the four
+  showcase themes.
 - `examples/`: standalone, Maven, Gradle and dependency fixtures; `examples/standalone/docs`
   is the fixture site used by the browser checks.
 - `showcase/`: the Apache Commons Lang showcase, which is the API shown in the docs,
@@ -86,7 +86,7 @@ without testing.
 - Keep the project version in `pyproject.toml` and `VERSION` in `extractor.py` in
   sync when preparing a release. Follow `CONTRIBUTING.md` for release procedures.
 - Update usage documentation and recorded limitations when behavior changes.
-  Rejected alternatives are in `docs/adr/0001-jdk-doclet-xml-sphinx-domain.md`; deferred work is in `docs/roadmap.md`.
+  Rejected alternatives are in `docs/adr/0001-jdk-doclet-xml-sphinx-domain.md`.
 
 ## Agent skills
 

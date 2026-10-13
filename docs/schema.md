@@ -1,11 +1,11 @@
 # API XML schema 1
 
-The process boundary is UTF-8 XML, rooted at `<api schema="1" extractor="0.1.0">`.
+The process boundary is UTF-8 XML, rooted at `<api schema="1" extractor="VERSION">`, where `extractor` is the
+package version that wrote it.
 Unknown schema versions, malformed XML, DTD/entity declarations, duplicate IDs and
 missing required declaration attributes or `sig` are rejected. Declaration kinds, nonempty
 names/signatures, package membership, and member IDs belonging to their enclosing
-type are validated before rendering. This tightens schema 1 validation without
-changing valid model structure. The file is generated input,
+type are validated before rendering. The file is generated input,
 not a general XML document interchange service. No external entities are fetched.
 
 - `package`: `name`, followed by `doc`.
@@ -25,15 +25,13 @@ not a general XML document interchange service. No external entities are fetched
   or default value, `r` type reference, and `params` containing one `param` per
   parameter or record component. `r` carries `target` (canonical ID) and the external
   Javadoc `path`, `module` and `fragment`; its text is the nested simple name.
-  Readers reject unknown tokens and malformed `r` targets. The plain `signature`
-  attribute of earlier development models was dropped before the first release;
-  regenerate such models.
+  Readers reject unknown tokens and malformed `r` targets.
 - `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
   `since`, `deprecated`, `apiNote`, `implSpec`, `implNote`) and a `label`. The three
   note kinds are additive in schema 1: older renderers show them under their kind name. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.
   Throws labels name the overriding method's exception after generic substitution;
-  type variables use their declared names. This preserves the schema 1 structure.
+  type variables use their declared names.
   Repeated `throws` descriptions for one exception share a part, separated by
   paragraph tokens, so explicit and omitted inheritance preserve all descriptions.
 - Tokens: `text`, `literal`, `code`, `link`, `start`, `end`. Text is element text,
@@ -45,8 +43,8 @@ not a general XML document interchange service. No external entities are fetched
   remain `start name="br"` tokens and render as native line blocks.
   Plain inline snippets use existing `start name="pre"`, `literal`, `end name="pre"`
   tokens; `pre` accepts an optional `attr name="lang"` for syntax highlighting.
-  Java is the default. Snippet text is not reparsed as HTML or Javadoc. Schema 1
-  remains valid: older renderers can display the body and warn about the attribute.
+  Java is the default. Snippet text is not reparsed as HTML or Javadoc. A renderer
+  that does not know `lang` displays the body and warns about the attribute.
   `{@value}` produces a `literal` token with the constant's Java source form; a
   referenced constant is a `plain` field `link` whose label is that `literal`.
   HTML tables use `start`/`end` tokens (`table`, `caption`, `thead`, `tbody`,

@@ -1,7 +1,7 @@
 # Development
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and Temurin
-JDK 25. Ensure `java`, `javac`, and `javadoc` are on `PATH`.
+JDK 25, with `java`, `javac` and `javadoc` on `PATH`.
 
 ```sh
 uv sync --locked
@@ -14,31 +14,23 @@ uv build
 uv run --locked twine check --strict dist/*
 ```
 
-The docs link into the Apache Commons Lang showcase, so build it first:
-`showcase/build.py` fetches the pinned commit, builds its site under
-`build/showcase/commons-lang/html/<theme>/` in Furo, Read the Docs, Alabaster
-and Lumina (the `showcase` dependency group), and fails when a theme's warning category
-exceeds the shared baseline in `showcase/commons-lang/showcase.json`. After a change that removes
-warnings, record the new counts with `--update-baseline`; an increase needs a
-deliberate baseline update in the same change.
+Build the showcase before the docs, because the docs link into it.
+`showcase/build.py` fetches the pinned Apache Commons Lang commit, builds it in
+Furo, Read the Docs, Alabaster and Lumina under `build/showcase/commons-lang/html/<theme>/`,
+and fails when a warning category exceeds the baseline in
+`showcase/commons-lang/showcase.json`. Record lower counts with `--update-baseline`;
+an increase needs a deliberate baseline update in the same change.
 
-`pre-commit install` sets up the commit and commit-message hooks; CI runs the same
-hooks in the Lint job. They cover Ruff lint and formatting, google-java-format for
-the doclet (the formatter Spotless uses for Java, pinned by checksum),
-`javac -Xlint:all -Werror`, actionlint, zizmor, typos, `pyproject.toml`
-validation, RST pitfalls, `uv.lock` freshness and basic file hygiene. Commit
-messages must use conventional prefixes such as `feat:`, `fix:` or `docs:`, and
-direct commits to `main` are rejected. Hooks with `--fix`/`--autofix` rewrite
-files; review and stage their changes. Python tools run through `uv run --locked`,
-so their versions come from `uv.lock`.
+The pre-commit hooks also run in CI. They cover Ruff, google-java-format for the
+doclet, `javac -Xlint:all -Werror`, actionlint, zizmor, typos, RST checks and
+`uv.lock` freshness. Commit messages need conventional prefixes (`feat:`, `fix:`,
+`docs:`), and direct commits to `main` are rejected. Hooks with `--fix` rewrite
+files; review and stage their changes.
 
-Update dependencies with `uv lock --upgrade`, and commit `uv.lock` with changes to
-`pyproject.toml`. CI uses `--locked` so a stale lockfile fails. Dependabot opens
-weekly updates, after a seven-day cooldown, for Python packages, pinned GitHub
-Actions and pre-commit hook revisions. To update hooks by hand, run
-`uv run --locked pre-commit autoupdate --freeze`.
+Update dependencies with `uv lock --upgrade` and commit `uv.lock` together with
+`pyproject.toml`. Dependabot opens weekly updates after a seven-day cooldown.
 
-For the browser checks:
+## Browser checks
 
 ```sh
 uv sync --locked --extra test --group showcase
@@ -51,35 +43,38 @@ done
 uv run --locked --extra test --group showcase python tests/visual_check.py
 ```
 
-Browser checks use the small site in `examples/standalone/docs`, which renders the
-standalone fixture with every documented feature. They cover
-desktop/mobile layouts, Java API structure and navigation in Alabaster, Classic,
-Furo, Read the Docs and Lumina, including Sphinx's search page, and fail on
-uncaught page errors. CI retains screenshots and a JSON report, including on failures.
-API pages must not be wider than the theme's own layout, measured on the index and
-on `reference.rst`, a page of native Sphinx objects with the same fields. Classic
-keeps a minimum page width, and some themes overflow on phones for native objects.
+The checks render `examples/standalone/docs` at desktop and mobile widths in each
+theme, including the search page, and fail on page errors or when API pages are
+wider than the theme's own layout (measured on `reference.rst`).
 
-The opt-in `uv run --locked python tests/build_tools_check.py` check needs Maven
-and Gradle on PATH (or explicit `--maven`/`--gradle` executable paths). It runs the
-consumer builds and verifies strict extraction and JDK-free publication. Build
-tools resolve their declared dependencies explicitly. For real-project timing,
-use `uv run --locked python tests/benchmark.py /prepared/source/root`; see
-`docs/performance.rst` for the measured workload and limitations.
+## Other checks
 
-The required `All checks` status covers lint, compiler warnings, the test matrix,
-source/wheel packaging, the Commons Lang showcase baseline, strict docs, browser
-checks, Maven/Gradle consumers, and dependency auditing.
-Package checks install the wheel built from the source archive and run the real
-integration suite against that installation. Weekly CI also detects newly
-reported vulnerabilities. The application remains an initial release; passing CI
-does not extend the compatibility promises in `docs/compatibility.rst`;
-update that page when a new environment has actually passed.
+- `uv run --locked python tests/build_tools_check.py` runs the Maven and Gradle
+  consumer builds. It needs both tools on `PATH`, or `--maven`/`--gradle` paths.
+- `uv run --locked python tests/benchmark.py /prepared/source/root` times a real
+  project; see `docs/performance.rst`.
+
+The required `All checks` status covers all of the above except the benchmark.
+Passing CI does not widen `docs/compatibility.rst`; update that page only when a
+new environment has actually passed.
 
 # Releases
 
-One-time PyPI setup must be completed by the PyPI account owner. Register a
-[pending trusted publisher](https://pypi.org/manage/account/publishing/) with:
+[Release Please](https://github.com/googleapis/release-please) opens a release PR
+from the conventional commits on `main`. The PR bumps the version in
+`pyproject.toml`, `src/sphinx_java_autodoc/extractor.py` and `uv.lock`, and updates
+`CHANGELOG.md`. Before 1.0, `feat:` and breaking changes bump the minor version.
+A `Release-As: 0.3.0` commit footer sets the version explicitly.
+
+To release, merge the release PR once `All checks` passes. Release Please tags the
+merge commit and dispatches the Release workflow, which reruns CI on the tag,
+publishes to PyPI with attestations and publishes the GitHub release. Published
+versions are immutable; fix a bad release with a new version. To retry, rerun the
+failed jobs, or dispatch Release manually on the existing tag.
+
+PyPI accepts uploads through a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/),
+so no API token is stored:
 
 | Field | Value |
 | --- | --- |
@@ -89,37 +84,5 @@ One-time PyPI setup must be completed by the PyPI account owner. Register a
 | Workflow filename | `release.yml` |
 | Environment | `pypi` |
 
-The GitHub repository and the Python distribution share the name
-`sphinx-java-autodoc`. If the project already exists on PyPI, add the publisher in that project's Publishing settings instead. No PyPI
-API token or repository deploy key is needed. See the
-[PyPI trusted publisher documentation](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
-
-Releases are prepared by [Release Please](https://github.com/googleapis/release-please).
-On every push to `main`, it opens or updates a release PR from the conventional
-commits since the last release. That PR bumps `[project].version` in
-`pyproject.toml`, `VERSION` in `src/sphinx_java_autodoc/extractor.py` and the
-project entry in `uv.lock`, and updates `CHANGELOG.md`. Before 1.0, `feat:` and
-breaking changes bump the minor version and everything else the patch version.
-Add a `Release-As: 0.3.0` footer to a commit to choose the version explicitly.
-
-To release, review and merge the release PR once `All checks` passes. Release
-Please then tags the merge commit, drafts a GitHub release with the changelog and
-dispatches the Release workflow for that tag. PRs and tags created with the
-default `GITHUB_TOKEN` don't trigger workflows by themselves, so Release Please
-also dispatches CI for its release PR.
-
-The Release workflow rejects branches, tags that disagree with either version,
-and commits outside `main`. It reruns CI on the tagged commit, publishes the
-tested wheel and sdist using PyPI OIDC with attestations, then attaches them to
-the draft release and publishes it. Published versions are immutable; fix a bad
-release with a new version. A tag pushed by hand, for example `v0.1.0`, still
-runs the same workflow and creates a release with generated notes.
-
-To retry a failed release, rerun failed jobs in GitHub Actions. If publishing has
-not succeeded, you can also dispatch Release manually and select the existing
-tag. Dispatching against a branch deliberately fails validation.
-
-GitHub Pages uses the built documentation artifact from a successful `main` push.
-Each open same-repository PR is also published at `pr-preview/pr-<number>/`
-after its CI passes, with a link commented on the PR; fork PRs are not deployed. GitHub environments restrict
-Pages to `main` and PyPI publishing to `v*` tags.
+GitHub Pages publishes the docs from each successful `main` build. Same-repository
+PRs get a preview at `pr-preview/pr-<number>/` after CI passes.

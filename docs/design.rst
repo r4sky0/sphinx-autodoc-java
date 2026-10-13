@@ -1,9 +1,6 @@
 How it works
 ============
 
-For contributors and readers evaluating the implementation. To use the extension
-in your library, start with :doc:`getting-started`.
-
 Sphinx runs a small JDK doclet over your sources before reading documents. The
 doclet uses the compiler's view of declarations, overloads and Javadoc links and
 writes a versioned XML model. The extension turns that model into native Sphinx
@@ -17,15 +14,10 @@ dependencies, options and the JDK, so any change re-extracts the whole project.
 Design records
 --------------
 
-These live in the repository:
-
 * `Architecture decision and alternatives considered
   <https://github.com/r4sky0/sphinx-java-autodoc/blob/main/docs/adr/0001-jdk-doclet-xml-sphinx-domain.md>`_
 * `XML model schema
   <https://github.com/r4sky0/sphinx-java-autodoc/blob/main/docs/schema.md>`_
-* `Roadmap <https://github.com/r4sky0/sphinx-java-autodoc/blob/main/docs/roadmap.md>`_
-
-Tested environments and known limits are on :doc:`compatibility`.
 
 Contribute
 ----------

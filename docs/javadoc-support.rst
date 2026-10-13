@@ -1,71 +1,60 @@
 Supported Javadoc
 =================
 
-Write API documentation as traditional Javadoc comments. This page lists what
-renders as native Sphinx content. Anything else produces a warning; see
-:doc:`troubleshooting` for alternatives and :doc:`compatibility` for known limits.
+These traditional Javadoc constructs render as native Sphinx content. Anything
+else produces a warning; see :doc:`troubleshooting`. Comment text is never
+interpreted as reStructuredText, and no raw HTML is emitted.
 
 Tags and HTML
 -------------
 
-Supported traditional Javadoc content includes descriptions, ``@param`` (including
-type parameters), ``@return``, ``@throws``/``@exception``, ``@see``, ``@since`` and
-``@deprecated``, plus the JDK's ``@apiNote``, ``@implSpec`` and ``@implNote`` notes,
-which use the standard doclet's headings and are not inherited. ``@author``,
-``@version`` and the ``@serial`` tags are omitted without a warning, as the standard
-doclet does by default; other custom tags warn. Inline ``code``, ``literal``, ``link``, ``linkplain``, ``value`` and
-``inheritDoc`` are processed from compiler trees. HTML paragraphs, nested
-ordered/unordered lists, tables, preformatted code, emphasis, strong text and absolute HTTP(S)/mailto links become
-native nodes. Literal text is never interpreted as RST, and raw HTML is not emitted.
-HTML link attribute entities are decoded once, and ``<br>`` preserves line breaks
-and inline formatting. Repeated ``@throws`` descriptions for the same exception
-are retained in order, including when inherited.
+- Block tags: ``@param`` (including type parameters), ``@return``,
+  ``@throws``/``@exception``, ``@see``, ``@since`` and ``@deprecated``.
+- JDK notes: ``@apiNote``, ``@implSpec`` and ``@implNote``, with the standard
+  doclet's headings. They are not inherited.
+- Inline tags: ``code``, ``literal``, ``link``, ``linkplain``, ``value``,
+  ``inheritDoc``, ``return`` and plain inline ``snippet``.
+- HTML: paragraphs, nested lists, tables, ``<pre>``, emphasis, strong text,
+  ``<br>`` and absolute HTTP(S) or mailto links.
+
+``@author``, ``@version`` and the ``@serial`` tags are omitted silently, as in the
+standard doclet's default output. Other custom tags warn.
 
 Constant values
 ---------------
 
 ``{@value}`` shows a constant in Java source form, as the standard doclet does:
-strings are quoted and escaped, characters quoted, and ``long``/``float`` values keep
-their ``L``/``f`` suffix. ``{@value Type#FIELD}`` links to the field, including external
-Javadoc fields such as ``Double#MAX_VALUE``; bare ``{@value}`` in a constant's own
-comment is plain text. An optional ``java.util.Formatter`` format, such as
-``{@value %x #MASK}``, is applied with the root locale. References to non-constant
-fields, bare ``{@value}`` outside a constant and invalid formats warn.
+quoted strings and characters, and ``L``/``f`` suffixes. ``{@value Type#FIELD}``
+links to the field, including JDK fields such as ``Double#MAX_VALUE``. A format
+such as ``{@value %x #MASK}`` is applied with the root locale. Non-constant fields
+and invalid formats warn.
 
 Tables
 ------
 
-HTML tables become native Sphinx tables with ``<caption>`` as the table title. Rows in
-``<thead>``, or leading rows that contain only ``<th>`` cells, form the header.
-``colspan`` and ``rowspan`` are kept, short rows are padded, and HTML's optional
-``</td>``, ``</th>`` and ``</tr>`` end tags are inferred. Cells can contain paragraphs,
-lists, code and nested tables. ``class``, ``summary`` and ``border`` on ``<table>`` and
-``scope`` on cells are accepted but have no effect: themes style tables. Other
-attributes and text outside cells warn. ``<th>`` cells outside the header render as
-ordinary cells. Wide tables scroll horizontally within the content column, and code in
-cells is not wrapped. Text from ``{@literal}`` and ``{@value}`` keeps straight quotes
-because Sphinx's smart quotes are not applied to it.
+HTML tables become Sphinx tables. ``<caption>`` becomes the title, and ``<thead>``
+rows or leading all-``<th>`` rows form the header. ``colspan``, ``rowspan``,
+omitted end tags and nested content work. Styling attributes are ignored because
+the theme styles tables; other attributes warn. Wide tables scroll horizontally.
 
 Inherited documentation
 -----------------------
 
-Overriding methods inherit omitted descriptions, parameters, returns and declared
-throws documentation. Parameter matching is positional, so renamed parameters work.
-Generic exception types are substituted through the compiler's view of the parent
-method: ``Contract<E>`` implemented as ``Contract<IOException>`` can supply
-``@throws IOException`` documentation. Method exception type parameters are matched
-by position, and inherited throws labels use the overriding method's exception.
-The default search follows the JDK 25 rule; ``{@inheritDoc SomeSupertype}`` selects
-a supertype explicitly. Links in inherited prose resolve in the original author's
-scope. Class and constructor comments do not inherit. Explicit unresolved inheritance
-is visibly marked and warned; missing inherited parts also warn. This is not a full
-replacement for standard Javadoc's DocLint or all standard-doclet synthesis.
+An overriding method inherits an omitted description, parameters, return and
+declared throws from its ancestor, following the JDK 25 search order.
+``{@inheritDoc SomeSupertype}`` picks a supertype explicitly. Parameters match by
+position, generic exception types are substituted, and links resolve in the
+ancestor's scope. Class and constructor comments do not inherit. Unresolved
+inheritance is marked in the output and warns.
+
+The ancestor's source must be available: in ``java_sources`` or
+``java_sourcepath``.
 
 Snippets
 --------
 
-Plain inline snippets become native literal blocks, with Java highlighting by
-default. An optional ``lang`` selects a Sphinx/Pygments language (such as ``text``):
+Plain inline snippets become code blocks, highlighted as Java unless ``lang``
+says otherwise:
 
 .. code-block:: java
 
@@ -75,19 +64,12 @@ default. An optional ``lang`` selects a Sphinx/Pygments language (such as ``text
     * }
     */
 
-Indentation follows JDK ``String.stripIndent`` rules, including the closing brace's
-indentation. Snippet content is literal: HTML entities, Javadoc tags and RST syntax
-inside the body are preserved rather than interpreted. Snippets are never executed.
-External/hybrid snippets (``file``/``class``), regions, IDs, duplicate attributes and
-markup actions (``@highlight``, ``@replace``, ``@link``, ``@start``, ``@end``) warn
-and retain the original tag as literal text. Markup detection is conservative:
-reserved markup tags following ``//`` or ``#`` also warn inside quoted examples.
+Indentation follows ``String.stripIndent``. The body is shown literally and never
+executed. External snippets (``file``/``class``), regions, IDs and markup tags such
+as ``@highlight`` warn and keep the original tag as text.
 
-Inline return descriptions
---------------------------
+Inline return
+-------------
 
-A method comment beginning with ``{@return description}`` produces both the
-introductory "Returns description." sentence and a Returns field. Inline markup
-and inherited return descriptions are preserved in both places. The conformance
-suite compares these results with the JDK standard doclet, including inheritance
-between inline and block return tags.
+A comment starting with ``{@return description}`` produces both the "Returns
+description." first sentence and a Returns field, as the standard doclet does.

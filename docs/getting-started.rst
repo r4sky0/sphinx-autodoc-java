@@ -1,13 +1,8 @@
-Publish your first API pages
-============================
+Generate your API pages
+=======================
 
-Start with one source root and let Sphinx generate the reference. By the end,
-you will have a local site with a page for each exported Java type. You do not
-need to convert your Javadoc comments or maintain a second copy of the API.
-
-This walkthrough assumes this layout. If you do not have Sphinx docs yet, create
-the ``docs`` directory and the two files shown below. Run commands from the
-project root:
+This walkthrough ends with a local site that has a page for each Java type in one
+source root. It assumes this layout, with commands run from the project root:
 
 .. code-block:: text
 
@@ -17,34 +12,27 @@ project root:
        conf.py              # Sphinx configuration
        index.rst            # documentation home page
 
-Use traditional Javadoc comments; see :doc:`javadoc-support` for what renders.
-JPMS ``module-info.java`` inputs and Lombok-like transformations are unsupported.
+Use traditional Javadoc comments; see :doc:`javadoc-support`. JPMS
+``module-info.java`` inputs and Lombok-like transformations are unsupported.
 
 Install the extension
 ---------------------
 
-Use Python 3.12+ and **JDK 25 for documentation extraction**, even if your library
-targets an older Java release; see :doc:`compatibility` for tested versions. Check
-that ``java -version``, ``javac -version`` and ``javadoc --version`` select JDK 25.
-Installing the extension also installs its compatible Sphinx dependency.
-
-From an existing uv project:
+You need Python 3.12+ and JDK 25 for extraction, even if your library targets an
+older Java release. Check that ``java -version``, ``javac -version`` and
+``javadoc --version`` report JDK 25. The extension installs a compatible Sphinx.
 
 .. code-block:: console
 
    uv add sphinx-java-autodoc
-
-Or install into an existing Python virtual environment:
-
-.. code-block:: console
-
+   # or, in an existing virtual environment:
    python -m pip install sphinx-java-autodoc
 
 Point Sphinx at your sources
 ----------------------------
 
-Add the following to ``docs/conf.py``. If you already have an ``extensions`` list,
-append ``"sphinx_java_autodoc"`` to it instead of replacing the list.
+Add this to ``docs/conf.py``, appending to an existing ``extensions`` list if you
+have one:
 
 .. code-block:: python
 
@@ -55,20 +43,16 @@ append ``"sphinx_java_autodoc"`` to it instead of replacing the list.
    java_generate = "api"
    java_visibility = "public"
 
-``java_sources`` is relative to ``conf.py``. Set ``java_release`` to your
-library's source/API target. Omitting it uses the selected JDK's default release. If JDK 25 is not on
-``PATH``, add ``java_jdk = "/path/to/jdk-25"``.
+- ``java_sources`` is relative to ``conf.py``.
+- ``java_release`` is your library's target release; omitted, the JDK default applies.
+- ``java_generate`` writes an index, package pages and type pages to ``docs/api/``.
+- ``java_visibility = "public"`` documents the public API; ``"protected"`` adds
+  extension points for subclass authors.
 
-``java_generate`` creates pages in ``docs/api/``: an index, a page per package and
-a page per type, titled with its name inside the package, such as
-``Widget.Nested``. ``java_visibility = "public"`` focuses the reference on the
-public API. Use ``"protected"`` to also document
-extension points for subclass authors.
+If JDK 25 is not on ``PATH``, add ``java_jdk = "/path/to/jdk-25"``. If your sources
+depend on other libraries, see :doc:`build-integration`.
 
-If your sources depend on other libraries, add their JARs or class directories
-to ``java_classpath`` before building; see :doc:`build-integration`.
-
-Put the API in your navigation
+Add the API to your navigation
 ------------------------------
 
 Create ``docs/index.rst``, or add ``api/index`` to its existing toctree:
@@ -83,30 +67,19 @@ Create ``docs/index.rst``, or add ``api/index`` to its existing toctree:
 
       api/index
 
-Build and inspect the site
---------------------------
+Build the site
+--------------
 
 .. code-block:: console
 
    uv run sphinx-build -W --keep-going -n docs docs/_build/html
 
-With a virtual environment activated, run the same command without ``uv run``.
-Open ``docs/_build/html/index.html``, follow **Java API**, choose a package,
-then open a type. You should see its declaration, Javadoc description and
-public members. ``-W`` makes warnings fail the build, and ``-n`` checks references.
-If the build fails, use :doc:`troubleshooting` to find the next step.
+``-W`` turns warnings into errors and ``-n`` checks references. Open
+``docs/_build/html/index.html`` and follow **Java API** to a type page. If the
+build fails, see :doc:`troubleshooting`.
 
-Edit a Javadoc description and rebuild to see it update. The extension compiles
-its bundled doclet locally and caches extraction; it does not need a separate
-doclet download or an application run.
+Edit Java comments to change the reference. Keep handwritten pages outside
+``docs/api/``: the extension owns that directory and refuses to overwrite edited
+or unowned files there.
 
-Keep API contracts and guides in their own places
--------------------------------------------------
-
-Edit Java comments to change the generated reference. Keep handwritten pages
-outside ``docs/api/``: the extension owns that directory and refuses to overwrite
-edited or unowned pages.
-
-You now have the reference. Continue with :doc:`guide` to help a reader choose
-an API and complete a task. When the local build works, :doc:`build-integration`
-shows how to publish it from CI.
+Next, :doc:`guide` shows how to write a task guide that links into the reference.

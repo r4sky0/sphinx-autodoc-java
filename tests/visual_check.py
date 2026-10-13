@@ -1,4 +1,4 @@
-"""Opt-in browser validation of the standalone fixture site in six themes.
+"""Opt-in browser validation of the standalone fixture site in five themes.
 
     python -m playwright install chromium
     sphinx-build -W --keep-going -n examples/standalone/docs examples/standalone/docs/_build/html
