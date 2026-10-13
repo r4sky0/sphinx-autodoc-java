@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sphinx-java-autodoc"
-version = "0.2.1"
+version = "0.3.0"
 description = "Compiler-backed Java API documentation in native Sphinx nodes"
 readme = "README.md"
 requires-python = ">=3.12"
