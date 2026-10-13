@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -140,6 +141,14 @@ def test_semantic_extraction(model):
         twice.find("doc/part[@kind='implSpec']/link").get("target")
         == "demo.Transformer#convert(java.lang.Object)"
     )
+
+
+def test_package_page_declares_the_package(site):
+    _, out = site
+    package = (out / "api/package-demo.html").read_text()
+    # Like Javadoc, the package page declares the package; its notes sit in the description.
+    declaration = re.search(r'<dl class="java package">(.*?)</dl>', package, re.S)[1]
+    assert f'id="{anchor("demo")}"' in declaration and "Example API." in declaration
 
 
 def test_html_links_structure_inventory_search(site):

@@ -154,7 +154,8 @@ source root, such as ``com/example/Widget.java``) and ``line``:
            f"{info['source']}#L{info['line']}"
        )
 
-``line`` is empty for compiler-generated members, such as an enum's ``values()``.
+``line`` is empty for packages and for compiler-generated members, such as an enum's
+``values()``.
 With several source roots, choose the root in ``linkcode_resolve``, for example by
 checking which root contains ``source``.
 
