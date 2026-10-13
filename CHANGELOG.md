@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.2.1...v0.3.0) (2026-10-13)
+
+
+### Features
+
+* configure the source encoding and exclude packages ([#40](https://github.com/r4sky0/sphinx-java-autodoc/issues/40)) ([de8ba9c](https://github.com/r4sky0/sphinx-java-autodoc/commit/de8ba9c527ab8abe53e1ec9c6b203c74d2864b11))
+* link declarations to their source through sphinx.ext.linkcode ([#41](https://github.com/r4sky0/sphinx-java-autodoc/issues/41)) ([d9d017f](https://github.com/r4sky0/sphinx-java-autodoc/commit/d9d017f118601461af0ea54e88b847fef68af36e))
+* render JDK note tags and omit author, version and serial tags ([#39](https://github.com/r4sky0/sphinx-java-autodoc/issues/39)) ([f51b7f0](https://github.com/r4sky0/sphinx-java-autodoc/commit/f51b7f026363799018912d81398e27cfd94507cc))
+
+
+### Documentation
+
+* add a feature gallery and source links in the showcase ([#43](https://github.com/r4sky0/sphinx-java-autodoc/issues/43)) ([d73a96b](https://github.com/r4sky0/sphinx-java-autodoc/commit/d73a96bda1b2ebf14cf1625516a0a1b46efa9da7))
+* shorten the guides, fix stale claims and organize navigation by task ([#45](https://github.com/r4sky0/sphinx-java-autodoc/issues/45)) ([d55214f](https://github.com/r4sky0/sphinx-java-autodoc/commit/d55214fa90688d2dcb8b1fe50a7bf46572479a1c))
+
 ## [0.2.1](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.2.0...v0.2.1) (2026-10-12)
 
 
