@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from sphinx.errors import ExtensionError
-from test_integration import SOURCES, build, element, project
+from test_integration import SOURCES, build, element, project, signature
 
 from sphinx_java_autodoc.domain import anchor
 from sphinx_java_autodoc.extractor import extract, read_model
@@ -106,3 +106,27 @@ def test_models_with_invalid_signature_tokens_are_rejected(tmp_path, sig):
     model.write_text(text[:start] + sig + text[text.index("</sig>", start) + 6 :])
     with pytest.raises(ExtensionError, match="invalid model"):
         read_model(model)
+
+
+def test_signatures_show_only_documented_annotations(tmp_path):
+    source = tmp_path / "p/A.java"
+    source.parent.mkdir()
+    source.write_text("""package p;
+import java.lang.annotation.*;
+@Target(ElementType.TYPE_USE) @interface Plain {}
+@Documented @Target(ElementType.TYPE_USE) @interface Shown {}
+/** Annotated. */
+public class A {
+  /** Old.
+   * @param s s
+   * @param t t
+   */
+  @Deprecated @SuppressWarnings("x") public void m(@Plain String s, @Shown String t) {}
+  /** Text. */ @Override public String toString() { return ""; }
+}
+""")
+    root = extract([tmp_path], [], tmp_path / "cache").root
+    sig = signature(element(root, "p.A#m(java.lang.String,java.lang.String)"))
+    assert "@Deprecated" in sig and "@Shown" in sig
+    assert "@SuppressWarnings" not in sig and "@Plain" not in sig
+    assert "@Override" not in signature(element(root, "p.A#toString()"))

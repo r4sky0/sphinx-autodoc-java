@@ -50,7 +50,7 @@ public class Widget implements Transformer<String> {
      * @throws IllegalArgumentException {@inheritDoc}
      */
     @Override public String convert(String renamed) throws IllegalArgumentException { return renamed; }
-    /** Converts a number to text.
+    /** Converts a number to text, such as "42"...
      * @param number the number
      * @return decimal text
      */

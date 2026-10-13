@@ -85,7 +85,8 @@ def test_type_pages_have_sections_with_summaries(site):
     assert [row[1] for row in constructors] == ["Widget()", "Widget(String)"]
     by_name = {row[1]: row for row in methods}
     assert by_name["convert(int)"][0] == "#" + anchor("demo.Widget#convert(int)")
-    assert by_name["convert(int)"][2] == "Converts a number to text."
+    # Summaries keep straight quotes too.
+    assert by_name["convert(int)"][2] == 'Converts a number to text, such as "42"...'
     assert by_name["old()"][2] == "Deprecated. Old entry point."
 
 

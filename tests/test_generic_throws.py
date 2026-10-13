@@ -37,7 +37,8 @@ public class Child extends Middle<java.io.IOException> {{
     root = extract([source], [], tmp_path / "cache").root
     assert not root.findall("diagnostic")
     part = element(root, "Child#run()").find("doc/part[@kind='throws']")
-    assert part.get("label") == exception
+    assert part.get("label") == exception.rpartition(".")[2]
+    assert part.get("target") == exception
     assert "if reading fails" in "".join(part.itertext())
     assert part.find("link").get("target") == "java.io.Reader"
     if explicit:

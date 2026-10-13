@@ -303,7 +303,7 @@ class AutoSummary(JavaDirective):
                 refexplicit=True,
                 refwarn=True,
             )
-            text = nodes.paragraph("")
+            text = nodes.paragraph("", support_smartquotes=False)
             if deprecated(element):
                 text += [nodes.strong("", "Deprecated."), nodes.Text(" ")]
             text.extend(summary(element, self.get_location()))
