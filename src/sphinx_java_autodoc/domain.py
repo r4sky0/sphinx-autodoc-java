@@ -29,7 +29,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 def anchor(symbol: str) -> str:
-    return "java-" + symbol.encode("utf-8").hex()
+    # Docutils IDs never contain ":", Java names never contain "-", and the keyword
+    # "new" cannot name a method, so these readable anchors cannot collide.
+    return "java:" + symbol.replace("#<init>(", "#new(").replace("#", "-")
 
 
 def role_for(element):

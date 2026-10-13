@@ -71,8 +71,11 @@ Identity examples: `example.Outer.Inner`, `example.Outer#FIELD`,
 Parameters in canonical IDs are fully qualified erased types; varargs use `[]`.
 External Javadoc fragments instead preserve declared type variables and use `...`
 for varargs, as verified against the standard doclet. Return types and
-parameter names do not affect IDs. HTML anchors are `java-` plus UTF-8 bytes of the
-ID encoded in hexadecimal: deterministic, reversible and collision-free.
+parameter names do not affect IDs. HTML anchors are `java:` plus the ID, with `#`
+replaced by `-` and `<init>` by `new`, as in `java:example.Outer-find(java.lang.String,int[])`
+and `java:example.Outer-new()`. They are deterministic, reversible and collision-free:
+docutils never generates `:` in IDs, Java names never contain `-`, and the keyword
+`new` cannot name a method.
 
 Declarations and diagnostics are sorted; no build timestamp or source path is
 stored. Renderers derive a declaration's file from its package and top-level type
