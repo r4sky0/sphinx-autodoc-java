@@ -779,8 +779,9 @@ public final class SphinxDoclet implements Doclet {
   private void documentation(Xml node, Element e) {
     var doc = node.add("doc");
     var own = parts(e);
-    var keys = new LinkedHashSet<>(own.keySet());
+    var keys = new LinkedHashSet<String>();
     keys.add("body");
+    keys.addAll(own.keySet());
     var method = overridingMethod(e);
     if (method != null) {
       for (int i = 0; i < method.getParameters().size(); i++) {
@@ -797,30 +798,119 @@ public final class SphinxDoclet implements Doclet {
       }
     }
     for (var key : keys) {
-      Part part = own.get(key);
-      if (part == null && method != null) {
-        part = findPart(e, key, new HashSet<>());
+      part(doc, e, own, method, key);
+      // The standard doclet notes overridden methods between the description and the tags.
+      if (key.equals("body")) {
+        overrides(doc, e);
       }
-      if (part == null) {
-        if (method != null) {
-          warn(
-              e,
-              "Cannot inherit %s; provide the overridden method's source documentation or"
-                  + " document this part explicitly.",
-              key);
+    }
+  }
+
+  private void part(
+      Xml doc, Element e, Map<String, Part> own, ExecutableElement method, String key) {
+    Part part = own.get(key);
+    if (part == null && method != null) {
+      part = findPart(e, key, new HashSet<>());
+    }
+    if (part == null) {
+      if (method != null) {
+        warn(
+            e,
+            "Cannot inherit %s; provide the overridden method's source documentation or"
+                + " document this part explicitly.",
+            key);
+      }
+      return;
+    }
+    var xml = doc.add("part").set("kind", key.split(":", 2)[0]).set("label", label(e, key, part));
+    if (key.startsWith(THROWS)
+        && elements.getTypeElement(key.substring(THROWS.length())) instanceof TypeElement thrown) {
+      xml.set("label", localName(thrown)).set("target", id(thrown)).set("role", "type");
+      javadocLocation(xml, thrown);
+    }
+    String context = key.startsWith(THROWS) ? THROWS + part.label() : key;
+    emit(xml, part.owner(), context, part.trees(), new HashSet<>());
+  }
+
+  /**
+   * The standard doclet's notes: "Specified by" for each implemented interface method, then
+   * "Overrides" for the superclass method, or "Specified by" when that method is abstract.
+   */
+  private void overrides(Xml doc, Element e) {
+    if (!(e instanceof ExecutableElement method)
+        || method.getKind() != ElementKind.METHOD
+        || method.getModifiers().contains(Modifier.STATIC)) {
+      return;
+    }
+    var owner = (TypeElement) method.getEnclosingElement();
+    var specified = new ArrayList<ExecutableElement>();
+    implemented(method, owner, owner.getInterfaces(), specified, new HashSet<>());
+    // An interface method that another listed method overrides adds nothing.
+    specified.removeIf(
+        a ->
+            specified.stream()
+                .anyMatch(
+                    b ->
+                        b != a && elements.overrides(b, a, (TypeElement) b.getEnclosingElement())));
+    specified.forEach(ancestor -> overridePart(doc, "specifiedBy", ancestor));
+    for (var type = owner.getSuperclass();
+        types.asElement(type) instanceof TypeElement superclass;
+        type = superclass.getSuperclass()) {
+      for (var candidate : superclass.getEnclosedElements()) {
+        if (candidate instanceof ExecutableElement ancestor
+            && ancestor.getKind() == ElementKind.METHOD
+            && visible(ancestor, false)
+            && elements.overrides(method, ancestor, owner)) {
+          boolean specifies = ancestor.getModifiers().contains(Modifier.ABSTRACT);
+          overridePart(doc, specifies ? "specifiedBy" : "overrides", ancestor);
+          return;
         }
+      }
+    }
+  }
+
+  /** Collects the methods of {@code interfaces} and their superinterfaces that method overrides. */
+  private void implemented(
+      ExecutableElement method,
+      TypeElement owner,
+      List<? extends TypeMirror> interfaces,
+      List<ExecutableElement> result,
+      Set<Element> seen) {
+    for (var type : interfaces) {
+      var face = (TypeElement) types.asElement(type);
+      if (!seen.add(face)) {
         continue;
       }
-      var xml = doc.add("part").set("kind", key.split(":", 2)[0]).set("label", label(e, key, part));
-      if (key.startsWith(THROWS)
-          && elements.getTypeElement(key.substring(THROWS.length()))
-              instanceof TypeElement thrown) {
-        xml.set("label", localName(thrown)).set("target", id(thrown)).set("role", "type");
-        javadocLocation(xml, thrown);
+      for (var candidate : face.getEnclosedElements()) {
+        if (candidate instanceof ExecutableElement ancestor
+            && ancestor.getKind() == ElementKind.METHOD
+            && visible(ancestor, false)
+            && elements.overrides(method, ancestor, owner)) {
+          result.add(ancestor);
+        }
       }
-      String context = key.startsWith(THROWS) ? THROWS + part.label() : key;
-      emit(xml, part.owner(), context, part.trees(), new HashSet<>());
+      implemented(method, owner, face.getInterfaces(), result, seen);
     }
+  }
+
+  /** A note such as "{@code hashCode} in class {@code Object}", linking both names. */
+  private void overridePart(Xml doc, String kind, ExecutableElement ancestor) {
+    var holder = (TypeElement) ancestor.getEnclosingElement();
+    var part = doc.add("part").set("kind", kind).set("label", "");
+    link(part, ancestor, ancestor.getSimpleName().toString());
+    part.addText("text", holder.getKind().isInterface() ? " in interface " : " in class ");
+    link(part, holder, localName(holder));
+  }
+
+  private void link(Xml parent, Element target, String text) {
+    var link =
+        parent
+            .add("link")
+            .set("plain", "false")
+            .set("target", id(target))
+            .set("role", role(target));
+    javadocLocation(link, target);
+    link.addText("text", text);
   }
 
   /** Labels follow the documented declaration, even when the prose is inherited. */
@@ -942,14 +1032,7 @@ public final class SphinxDoclet implements Doclet {
           "Unresolved Javadoc reference %s; check spelling, source paths and classpath.",
           ref);
     } else {
-      String role =
-          switch (target) {
-            case TypeElement _ -> "type";
-            case ExecutableElement _ -> "method";
-            case PackageElement _ -> "package";
-            default -> "field";
-          };
-      link.set("role", role);
+      link.set("role", role(target));
       javadocLocation(link, target);
     }
     if (label.isEmpty()) {
@@ -989,6 +1072,15 @@ public final class SphinxDoclet implements Doclet {
     return target.getKind() == ElementKind.CONSTRUCTOR || type.equals(scope)
         ? member
         : localName(type) + "." + member;
+  }
+
+  private static String role(Element target) {
+    return switch (target) {
+      case TypeElement _ -> "type";
+      case ExecutableElement _ -> "method";
+      case PackageElement _ -> "package";
+      default -> "field";
+    };
   }
 
   /** Records where standard Javadoc publishes the target, for external Javadoc links. */

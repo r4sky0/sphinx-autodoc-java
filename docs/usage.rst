@@ -95,7 +95,9 @@ Other directives work the same way:
 
 ``java:autopackage`` renders the ``package-info.java`` comment.
 ``java:autosummary`` lists each entry with a link and its first sentence; unknown
-entries warn as ``java.summary``. Generated pages consist of these directives.
+entries warn as ``java.summary``. As in Javadoc, members are listed with their
+declared parameters, and methods and fields get a column with their modifiers and
+type, such as ``static <L, R> Pair<L, R>``. Generated pages consist of these directives.
 
 What gets documented
 --------------------
@@ -105,6 +107,9 @@ What gets documented
   protected types.
 - Only declared members are listed. An overriding method inherits its ancestor's
   comment; other inherited methods stay on the declaring type's page.
+- As in Javadoc, an overriding method notes what it implements or overrides:
+  "Specified by: ``convert`` in interface ``Transformer``", or "Overrides:
+  ``hashCode`` in class ``Object``".
 - Nested types get their own pages.
 - Signatures show only ``@Documented`` annotations, as the standard doclet does, so
   ``@Override`` and ``@SuppressWarnings`` are left out.

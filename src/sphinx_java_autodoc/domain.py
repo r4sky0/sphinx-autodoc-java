@@ -98,6 +98,49 @@ def signature_nodes(tokens) -> list[nodes.Node]:
     return result
 
 
+# Javadoc's "Modifier and Type" column leaves out visibility and implementation details.
+SUMMARY_MODIFIERS = {"protected", "static", "final", "abstract", "default"}
+
+
+def summary_type(element) -> list[nodes.Node]:
+    """A member's modifiers, type parameters and type, as in Javadoc's summary column."""
+    tokens = []
+    sig = list(element.find("sig"))
+    i = 0
+    while i < len(sig) and sig[i].tag != "n":
+        if sig[i].tag == "t" and sig[i].text == "@":
+            # An annotation: "@", its type, optional arguments and a space.
+            i += 2
+            if i < len(sig) and sig[i].tag == "t" and sig[i].text.startswith("("):
+                i += 1
+        else:
+            tokens.append(sig[i])
+        i += 1
+    owner = SYMBOLS.get(element.get("id").partition("#")[0])
+    interface = owner is not None and owner.get("kind") in {
+        "interface",
+        "annotation_type",
+    }
+    modifiers = []
+    while tokens and (tokens[0].tag == "k" or tokens[0].text == " "):
+        text = tokens.pop(0).text
+        if text in SUMMARY_MODIFIERS and not (interface and text == "abstract"):
+            modifiers.append(text)
+    if tokens and tokens[-1].tag == "t" and tokens[-1].text == " ":
+        tokens.pop()
+    prefix = [nodes.Text(" ".join(modifiers) + " ")] if modifiers else []
+    return prefix + signature_nodes(tokens)
+
+
+def summary_label(element) -> str:
+    """A member's name with declared parameters, as in Javadoc's summaries."""
+    params = element.find("sig/params")
+    if element.tag == "type" or params is None:
+        return local_name(element)
+    declared = ("".join(t.text or "" for t in param) for param in params)
+    return f"{element.find('sig/n').text}({', '.join(declared)})"
+
+
 def display_name(symbol: str) -> str:
     owner, _, member = symbol.partition("#")
     return f"{owner}.{member_label(symbol)}" if member else symbol
@@ -271,24 +314,24 @@ class AutoPackage(JavaDirective):
 
 
 class AutoSummary(JavaDirective):
-    """A table of linked names and first sentences, like sphinx.ext.autosummary."""
+    """A table of linked names and first sentences, like sphinx.ext.autosummary.
+
+    Methods and fields get a first column with their modifiers and type, as in Javadoc.
+    """
 
     has_content = True
 
     def run(self):
         self.env.note_dependency(self.env.java_model_path)
         table = nodes.table("", classes=["autosummary", "longtable", "java"])
-        group = nodes.tgroup("", cols=2)
-        group += nodes.colspec("", colwidth=10)
-        group += nodes.colspec("", colwidth=90)
-        body = nodes.tbody()
+        rows = []
         for line in self.content:
             symbol = re.sub(r"\s+", "", line)
             if not symbol:
                 continue
             element = self.lookup(symbol)
             if element is not None:
-                label = local_name(element)
+                label = summary_label(element)
             elif symbol in PACKAGES:
                 element, label = PACKAGES[symbol], symbol
             else:
@@ -307,13 +350,28 @@ class AutoSummary(JavaDirective):
             if deprecated(element):
                 text += [nodes.strong("", "Deprecated."), nodes.Text(" ")]
             text.extend(summary(element, self.get_location()))
-            body += nodes.row(
-                "",
-                nodes.entry("", nodes.paragraph("", "", link)),
-                nodes.entry("", text),
-            )
-        if not body.children:
+            typed = element.tag == "member" and element.get("kind") in {
+                "method",
+                "field",
+            }
+            kind = nodes.literal("", "", *summary_type(element)) if typed else None
+            rows.append((kind, nodes.paragraph("", "", link), text))
+        if not rows:
             return []
+        typed = any(kind is not None for kind, _, _ in rows)
+        widths = (15, 25, 60) if typed else (10, 90)
+        group = nodes.tgroup("", cols=len(widths))
+        group.extend(nodes.colspec("", colwidth=width) for width in widths)
+        body = nodes.tbody()
+        for kind, name, text in rows:
+            cells = []
+            if typed:
+                cells.append(
+                    nodes.entry()
+                    if kind is None
+                    else nodes.entry("", nodes.paragraph("", "", kind))
+                )
+            body += nodes.row("", *cells, nodes.entry("", name), nodes.entry("", text))
         group += body
         table += group
         return [table]

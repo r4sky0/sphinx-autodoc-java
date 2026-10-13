@@ -26,9 +26,13 @@ not a general XML document interchange service. No external entities are fetched
   parameter or record component. `r` carries `target` (canonical ID) and the external
   Javadoc `path`, `module` and `fragment`; its text is the nested simple name.
   Readers reject unknown tokens and malformed `r` targets.
-- `doc/part`: `kind` (`body`, `param`, `typeparam`, `return`, `throws`, `see`,
-  `since`, `deprecated`, `apiNote`, `implSpec`, `implNote`) and a `label`. The three
-  note kinds are additive in schema 1: older renderers show them under their kind name. Parameter labels follow the child declaration
+- `doc/part`: `kind` (`body`, `specifiedBy`, `overrides`, `param`, `typeparam`,
+  `return`, `throws`, `see`, `since`, `deprecated`, `apiNote`, `implSpec`, `implNote`)
+  and a `label`. The three note kinds, `specifiedBy` and `overrides` are additive in
+  schema 1: older renderers show them under their kind name. `specifiedBy` and
+  `overrides` follow `body`: one `specifiedBy` per implemented interface method, then
+  the superclass method as `overrides`, or `specifiedBy` when it is abstract. Each
+  holds a method `link`, ` in class ` or ` in interface ` text, and a type `link`. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.
   `typeparam` parts document the type parameters of generic types and methods.
   Throws labels name the overriding method's exception after generic substitution;
