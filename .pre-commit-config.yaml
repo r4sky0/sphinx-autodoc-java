@@ -64,6 +64,7 @@ repos:
     rev: b859c0df7f391deba73030f79b957e62b4d81dc6 # frozen: varcon-core-v5.0.7
     hooks:
       - id: typos
+        exclude: ^CHANGELOG\.md$  # release-please writes commit hashes here
 
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: 91ab4bf57e58b32adf1a122681f6ebe164d081c8 # frozen: v4.4.0
