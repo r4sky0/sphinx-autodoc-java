@@ -304,13 +304,28 @@ class AutoPackage(JavaDirective):
             self.missing("package", package, "package")
             return []
         domain = self.env.get_domain("java")
-        target = nodes.target("", "", ids=[anchor(package)])
-        self.state.document.note_explicit_target(target)
-        domain.data["objects"][package] = (self.env.docname, anchor(package), "package")
-        index = addnodes.index(
-            entries=[("single", f"{package} (Java package)", anchor(package), "", None)]
+        target = anchor(package)
+        # Javadoc's package pages open with this declaration; as an object description,
+        # the package's notes and fields look like those of its types in every theme.
+        desc = addnodes.desc(
+            "",
+            domain="java",
+            objtype="package",
+            desctype="package",
+            classes=["java", "package"],
         )
-        return [index, target, *documentation(element, self.get_location())]
+        sig = addnodes.desc_signature("", "", ids=[target], fullname=package)
+        sig += addnodes.desc_sig_keyword("package", "package")
+        sig += addnodes.desc_sig_space()
+        sig += addnodes.desc_name(package, package)
+        self.state.document.note_explicit_target(sig)
+        desc += sig
+        desc += addnodes.desc_content("", *documentation(element, self.get_location()))
+        domain.data["objects"][package] = (self.env.docname, target, "package")
+        index = addnodes.index(
+            entries=[("single", f"{package} (Java package)", target, "", None)]
+        )
+        return [index, desc]
 
 
 class AutoSummary(JavaDirective):
