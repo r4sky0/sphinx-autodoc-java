@@ -90,3 +90,40 @@ def test_inline_and_inherited_return_descriptions_match_standard_doclet(tmp_path
         )
         == "Returns the answer."
     )
+
+
+def test_link_labels_match_standard_doclet(tmp_path):
+    source = tmp_path / "p/Links.java"
+    source.parent.mkdir()
+    source.write_text("""package p;
+import java.util.Map;
+/**
+ * {@link java.util.Map.Entry}, {@link Map.Entry#getKey()}, {@link #of}, {@link #take},
+ * {@link Links.Inner}, {@link Inner#go()}, {@link #Links()}, {@link #of(Object,Object)},
+ * {@link String#format(String, Object...)}, {@link #FIELD} and {@link p}.
+ */
+public class Links {
+    /** A field. */ public static final int FIELD = 1;
+    /** Constructs. */ public Links() {}
+    /** Pairs. @param <L> left @param <R> right @param left l @param right r @return a map */
+    public static <L, R> Map<L, R> of(L left, R right) { return null; }
+    /** Takes. @param a lists @param b numbers */
+    public void take(java.util.List<String>[] a, int... b) {}
+    /** Nested. */ public static class Inner { /** Goes. */ public void go() {} }
+}
+""")
+    (tmp_path / "p/package-info.java").write_text("/** Package. */\npackage p;\n")
+    root = extract([tmp_path], [], tmp_path / "cache").root
+    assert not root.findall("diagnostic")
+    output = tmp_path / "standard"
+    run(["javadoc", "-quiet", "-Xdoclint:none", "-d", str(output), str(source)])
+    standard = Blocks()
+    standard.feed((output / "p/Links.html").read_text())
+    body = element(root, "p.Links").find("doc/part[@kind='body']")
+    rendered = " ".join(n.astext() for n in comment(body, None))
+    assert rendered == (
+        "Map.Entry, Map.Entry.getKey(), of(L, R), take(List[], int...), Links.Inner,"
+        " Links.Inner.go(), Links(), of(Object,Object), String.format(String, Object...),"
+        " FIELD and p."
+    )
+    assert rendered in standard.blocks

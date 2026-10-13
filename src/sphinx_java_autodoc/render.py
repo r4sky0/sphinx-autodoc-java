@@ -356,6 +356,9 @@ def comment(part: ET.Element, location, quiet: bool = False) -> list[nodes.Node]
             )
         elif not p.astext().strip():
             p.parent.remove(p)
+    # Javadoc prints comment text as written; Sphinx would curl quotes and join dots.
+    for node in root.children:
+        node["support_smartquotes"] = False
     return root.children
 
 
@@ -427,10 +430,11 @@ def field(kind: str, items) -> nodes.field:
     for label, content in items:
         content = list(content)
         if label:
+            label = nodes.strong("", "", label)
             if content and isinstance(content[0], nodes.paragraph):
-                content[0].insert(0, [nodes.strong("", label), nodes.Text(" – ")])
+                content[0].insert(0, [label, nodes.Text(" – ")])
             else:
-                content.insert(0, nodes.paragraph("", "", nodes.strong("", label)))
+                content.insert(0, nodes.paragraph("", "", label))
         bodies.append(content)
     if len(bodies) == 1:
         body = nodes.field_body("", *bodies[0])
@@ -458,7 +462,12 @@ def documentation(element: ET.Element, location) -> list[nodes.Node]:
         elif kind == "deprecated":
             notice.extend(content)
         else:
-            fields_by_kind.setdefault(kind, []).append((part.get("label"), content))
+            label = part.get("label") and nodes.Text(part.get("label"))
+            if label and part.get("target"):
+                # A documented exception links to its type, as in signatures.
+                label = reference(part, [label])
+                label["refwarn"] = False
+            fields_by_kind.setdefault(kind, []).append((label, content))
     for kind, items in fields_by_kind.items():
         fields += field(kind, items)
     if notice is not None:

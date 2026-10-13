@@ -30,8 +30,12 @@ not a general XML document interchange service. No external entities are fetched
   `since`, `deprecated`, `apiNote`, `implSpec`, `implNote`) and a `label`. The three
   note kinds are additive in schema 1: older renderers show them under their kind name. Parameter labels follow the child declaration
   even when prose is inherited. Part contents are an ordered token sequence.
+  `typeparam` parts document the type parameters of generic types and methods.
   Throws labels name the overriding method's exception after generic substitution;
-  type variables use their declared names.
+  type variables use their declared names. A `throws` part whose exception is a type
+  also carries `target`, `role` and the external Javadoc `path`, `module` and
+  `fragment`, as `link` does, and its label is the type's name without its package.
+  These attributes are additive in schema 1.
   Repeated `throws` descriptions for one exception share a part, separated by
   paragraph tokens, so explicit and omitted inheritance preserve all descriptions.
 - Tokens: `text`, `literal`, `code`, `link`, `start`, `end`. Text is element text,
@@ -52,7 +56,9 @@ not a general XML document interchange service. No external entities are fetched
 - `link`: `target` is the compiler's canonical symbol ID; `role` identifies the
   domain object kind. `path`, `module`, `fragment` hold external Javadoc location
   metadata; `plain` distinguishes link/plainlink presentation. Children form the
-  label. An unresolved link has no resolved location and has a diagnostic.
+  label; a comment link without one gets the standard doclet's text, such as
+  `Map.Entry`, `String.format(String, Object...)` or `of(L, R)` within the same type.
+  An unresolved link has no resolved location and has a diagnostic.
 - `diagnostic`: symbol-qualified warning text, including unsupported constructs.
   Warnings survive cache hits and are re-emitted by Sphinx.
 

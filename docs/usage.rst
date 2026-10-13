@@ -106,6 +106,8 @@ What gets documented
 - Only declared members are listed. An overriding method inherits its ancestor's
   comment; other inherited methods stay on the declaring type's page.
 - Nested types get their own pages.
+- Signatures show only ``@Documented`` annotations, as the standard doclet does, so
+  ``@Override`` and ``@SuppressWarnings`` are left out.
 
 Roles
 -----

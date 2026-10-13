@@ -3,6 +3,7 @@ package sphinxjava;
 import com.sun.source.doctree.*;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
+import java.lang.annotation.Documented;
 import java.nio.file.*;
 import java.util.*;
 import java.util.function.Consumer;
@@ -301,7 +302,7 @@ public final class SphinxDoclet implements Doclet {
 
   private void sig(Xml parent, Element e) {
     var sig = parent.add("sig");
-    for (var annotation : e.getAnnotationMirrors()) {
+    for (var annotation : documented(e.getAnnotationMirrors())) {
       annotation(sig, annotation);
       sig.addText("t", " ");
     }
@@ -344,7 +345,7 @@ public final class SphinxDoclet implements Doclet {
       var params = sig.add("params");
       for (var component : type.getRecordComponents()) {
         var param = params.add("param");
-        for (var annotation : component.getAnnotationMirrors()) {
+        for (var annotation : documented(component.getAnnotationMirrors())) {
           annotation(param, annotation);
           param.addText("t", " ");
         }
@@ -380,7 +381,7 @@ public final class SphinxDoclet implements Doclet {
     for (int i = 0; i < parameters.size(); i++) {
       var parameter = parameters.get(i);
       var param = params.add("param");
-      for (var annotation : parameter.getAnnotationMirrors()) {
+      for (var annotation : documented(parameter.getAnnotationMirrors())) {
         annotation(param, annotation);
         param.addText("t", " ");
       }
@@ -448,7 +449,7 @@ public final class SphinxDoclet implements Doclet {
   }
 
   private void typeTokens(Xml sig, TypeMirror type) {
-    for (var annotation : type.getAnnotationMirrors()) {
+    for (var annotation : documented(type.getAnnotationMirrors())) {
       annotation(sig, annotation);
       sig.addText("t", " ");
     }
@@ -501,13 +502,24 @@ public final class SphinxDoclet implements Doclet {
 
   /** A link to a type: its compiler ID, external Javadoc location and nested simple name. */
   private void typeReference(Xml sig, TypeElement type) {
-    String pkg = elements.getPackageOf(type).getQualifiedName().toString();
-    String name = type.getQualifiedName().toString();
     var reference = sig.add("r").set("target", id(type));
     javadocLocation(reference, type);
-    reference
-        .node()
-        .setTextContent(Xml.safe(pkg.isEmpty() ? name : name.substring(pkg.length() + 1)));
+    reference.node().setTextContent(Xml.safe(localName(type)));
+  }
+
+  /** The type's name without its package, such as {@code Map.Entry}. */
+  private String localName(TypeElement type) {
+    String pkg = elements.getPackageOf(type).getQualifiedName().toString();
+    String name = type.getQualifiedName().toString();
+    return pkg.isEmpty() ? name : name.substring(pkg.length() + 1);
+  }
+
+  /** The standard doclet shows only annotations whose type is {@code @Documented}. */
+  private static List<? extends AnnotationMirror> documented(
+      List<? extends AnnotationMirror> annotations) {
+    return annotations.stream()
+        .filter(a -> a.getAnnotationType().asElement().getAnnotation(Documented.class) != null)
+        .toList();
   }
 
   private void annotation(Xml sig, AnnotationMirror annotation) {
@@ -601,8 +613,14 @@ public final class SphinxDoclet implements Doclet {
   private void putParam(Map<String, Part> result, Element e, ParamTree param) {
     String name = param.getName().toString();
     String key = "param:" + name;
-    if (e instanceof ExecutableElement method) {
-      var declared = param.isTypeParameter() ? method.getTypeParameters() : method.getParameters();
+    List<? extends Element> declared = null;
+    if (param.isTypeParameter() && e instanceof Parameterizable generic) {
+      declared = generic.getTypeParameters();
+    } else if (e instanceof ExecutableElement method) {
+      declared = method.getParameters();
+    }
+    // Record components keep their names; positions follow renamed overriding parameters.
+    if (declared != null) {
       int index = -1;
       for (int i = 0; i < declared.size(); i++) {
         if (declared.get(i).getSimpleName().contentEquals(name)) {
@@ -794,6 +812,12 @@ public final class SphinxDoclet implements Doclet {
         continue;
       }
       var xml = doc.add("part").set("kind", key.split(":", 2)[0]).set("label", label(e, key, part));
+      if (key.startsWith(THROWS)
+          && elements.getTypeElement(key.substring(THROWS.length()))
+              instanceof TypeElement thrown) {
+        xml.set("label", localName(thrown)).set("target", id(thrown)).set("role", "type");
+        javadocLocation(xml, thrown);
+      }
       String context = key.startsWith(THROWS) ? THROWS + part.label() : key;
       emit(xml, part.owner(), context, part.trees(), new HashSet<>());
     }
@@ -929,10 +953,42 @@ public final class SphinxDoclet implements Doclet {
       javadocLocation(link, target);
     }
     if (label.isEmpty()) {
-      link.addText("text", ref.toString());
+      link.addText("text", target == null ? ref.toString() : linkLabel(owner, ref, target));
     } else {
       emit(link, owner, "label", label, new HashSet<>());
     }
+  }
+
+  /**
+   * The standard doclet's text for a link without a label: {@code Map.Entry}, {@code
+   * String.format(String, Object...)}, or {@code of(L, R)} for a member of the same type.
+   */
+  private String linkLabel(Element owner, ReferenceTree ref, Element target) {
+    if (target instanceof PackageElement pkg) {
+      return pkg.getQualifiedName().toString();
+    }
+    if (target instanceof TypeElement type) {
+      return localName(type);
+    }
+    String signature = ref.getSignature();
+    String member = signature.substring(signature.indexOf('#') + 1);
+    if (target instanceof ExecutableElement method && !member.contains("(")) {
+      member +=
+          method.getParameters().stream()
+              .map(p -> linkType(p.asType()).replaceAll("^.*\\.", ""))
+              .collect(Collectors.joining(", ", "(", ")"));
+      if (method.isVarArgs()) {
+        member = member.substring(0, member.length() - 3) + "...)";
+      }
+    }
+    Element scope = owner;
+    while (scope != null && !(scope instanceof TypeElement)) {
+      scope = scope.getEnclosingElement();
+    }
+    var type = (TypeElement) target.getEnclosingElement();
+    return target.getKind() == ElementKind.CONSTRUCTOR || type.equals(scope)
+        ? member
+        : localName(type) + "." + member;
   }
 
   /** Records where standard Javadoc publishes the target, for external Javadoc links. */

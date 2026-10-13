@@ -115,10 +115,13 @@ def test_semantic_extraction(model):
     assert (
         inherited.find("doc/part[@kind='return']/text").text == "the transformed value"
     )
-    assert (
-        inherited.find("doc/part[@kind='throws']/text").text
-        == "if the value is invalid"
-    )
+    thrown = inherited.find("doc/part[@kind='throws']")
+    assert thrown.find("text").text == "if the value is invalid"
+    assert thrown.get("label") == "IllegalArgumentException"
+    assert thrown.get("target") == "java.lang.IllegalArgumentException"
+    assert thrown.get("path") == "java/lang/IllegalArgumentException.html"
+    generic = element(root, "demo.Transformer").find("doc/part[@kind='typeparam']")
+    assert generic.get("label") == "<T>"
     assert "if the value is empty" in "".join(
         inherited.find("doc/part[@kind='throws']").itertext()
     )
@@ -156,6 +159,13 @@ def test_html_links_structure_inventory_search(site):
     )
     assert "java/util/Map.Entry.html" in html
     assert "java/lang/String.html#substring(int,int)" in html
+    # Labels read as in the standard doclet, and comment text keeps straight quotes.
+    assert '<span class="pre">Map.Entry</span>' in html
+    assert "such as &quot;42&quot;..." in html
+    assert (
+        '<strong><a class="reference external" href="https://docs.oracle.com/en/java/'
+        'javase/25/docs/api/java.base/java/lang/IllegalArgumentException.html">' in html
+    )
     assert "<strong>structure</strong>" in html
     assert 'href="https://example.test/?a=1&amp;b=2"' in html
     assert '<div class="line">First line</div>' in html
@@ -245,7 +255,7 @@ def test_deterministic_extraction_and_cache(model, tmp_path):
     times = source.stat()
     source.write_text(
         source.read_text().replace(
-            "Converts a number to text.", "Converts a number to prose."
+            "Converts a number to text", "Converts a number to prose."
         )
     )
     os.utime(source, ns=(times.st_atime_ns, times.st_mtime_ns))
@@ -268,7 +278,7 @@ def test_incremental_sphinx_source_add_remove_and_content(tmp_path):
     stat = source.stat()
     source.write_text(
         source.read_text().replace(
-            "Converts a number to text.", "A newly changed description."
+            "Converts a number to text", "A newly changed description."
         )
     )
     os.utime(source, ns=(stat.st_atime_ns, stat.st_mtime_ns))
@@ -383,7 +393,7 @@ def test_visibility_selection_and_duplicate_excerpt(tmp_path):
         )
     build(docs, tmp_path / "out")
     html = (tmp_path / "out/index.html").read_text()
-    assert "Converts a number to text." in html
+    assert "Converts a number to text" in html
     assert "protected extension point" not in html
     assert "Combines array" not in html
 
@@ -595,7 +605,7 @@ def test_jar_dependency(tmp_path):
 def test_type_annotations_do_not_change_identity(tmp_path):
     source = tmp_path / "Annotated.java"
     source.write_text("""import java.lang.annotation.*;
-@Target(ElementType.TYPE_USE) @interface Flag {}
+@Documented @Target(ElementType.TYPE_USE) @interface Flag {}
 /** Type annotation fixture. */
 public class Annotated {
     /** An annotated argument.
