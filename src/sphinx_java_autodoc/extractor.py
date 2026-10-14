@@ -16,7 +16,7 @@ from sphinx.errors import ExtensionError
 
 from .model import Model, read_model
 
-VERSION = "0.4.0"  # x-release-please-version
+VERSION = "0.5.0"  # x-release-please-version
 DOCLET = Path(__file__).parent / "java" / "SphinxDoclet.java"
 PACKAGE = re.compile(r"[^\W\d]\w*(?:\.[^\W\d]\w*)*")
 
