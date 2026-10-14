@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.4.0...v0.5.0) (2026-10-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* use readable HTML anchors for Java declarations ([#50](https://github.com/r4sky0/sphinx-java-autodoc/issues/50))
+
+### Features
+
+* declare packages on their pages, as Javadoc does ([#51](https://github.com/r4sky0/sphinx-java-autodoc/issues/51)) ([f24dfc1](https://github.com/r4sky0/sphinx-java-autodoc/commit/f24dfc13956a924d4f25b3a4465e07e45a93579f))
+* use readable HTML anchors for Java declarations ([#50](https://github.com/r4sky0/sphinx-java-autodoc/issues/50)) ([f75278e](https://github.com/r4sky0/sphinx-java-autodoc/commit/f75278e719775eeeb7d81b521eddce4e59c1733a))
+
 ## [0.4.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.3.0...v0.4.0) (2026-10-13)
 
 
