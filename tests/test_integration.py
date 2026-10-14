@@ -151,6 +151,22 @@ def test_package_page_declares_the_package(site):
     assert f'id="{anchor("demo")}"' in declaration and "Example API." in declaration
 
 
+def test_anchors_are_readable_and_unique(site):
+    _, out = site
+    assert anchor("demo.Widget#convert(int)") == "java:demo.Widget-convert(int)"
+    assert anchor("demo.Widget#<init>(java.lang.String)") == (
+        "java:demo.Widget-new(java.lang.String)"
+    )
+    widget = (out / "api/type-demo.Widget.html").read_text()
+    assert 'id="java:demo.Widget-new(java.lang.String)"' in widget
+    # The package's anchor must not clash with the section ID docutils derives from its title.
+    package = (out / "api/package-demo.html").read_text()
+    assert 'id="java:demo"' in package and 'id="demo"' in package
+    for page in (out / "api").glob("*.html"):
+        ids = re.findall(r'\sid="([^"]+)"', page.read_text())
+        assert len(ids) == len(set(ids)), page.name
+
+
 def test_html_links_structure_inventory_search(site):
     docs, out = site
     html = (out / "api/type-demo.Widget.html").read_text()

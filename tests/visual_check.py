@@ -63,14 +63,25 @@ def main():
                             theme_width,
                             page.evaluate("document.documentElement.scrollWidth"),
                         )
+                    # Anchors contain ":" and "(", which theme scripts must accept.
                     page.goto(
-                        base + "/api/type-demo.Widget.html", wait_until="networkidle"
+                        base
+                        + "/api/type-demo.Widget.html#java:demo.Widget-convert(int)",
+                        wait_until="networkidle",
+                    )
+                    # Some themes scroll smoothly; wait until the target is in view.
+                    page.wait_for_function(
+                        """() => {
+                          const id = decodeURIComponent(location.hash.slice(1));
+                          const top = document.getElementById(id).getBoundingClientRect().top;
+                          return top > -1 && top < innerHeight;
+                        }"""
                     )
                     assert page.locator("dl.java").count() >= 8
                     assert page.locator("h2", has_text="Constructors").count() == 1
                     assert page.locator("pre").count() > 0
                     assert page.locator("dl.java ul li ol li").count() == 2
-                    assert page.locator('a[href^="#java-"]').count() > 0
+                    assert page.locator('a[href^="#java:"]').count() > 0
                     lines = page.locator("dl.java .line-block > .line")
                     assert lines.all_text_contents() == [
                         "First line",
