@@ -14,6 +14,7 @@ authors = [{ name = "Ralph Offinger" }]
 keywords = ["sphinx", "java", "javadoc", "documentation", "autodoc"]
 classifiers = [
     "Development Status :: 3 - Alpha",
+    "Framework :: Sphinx :: Domain",
     "Framework :: Sphinx :: Extension",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
