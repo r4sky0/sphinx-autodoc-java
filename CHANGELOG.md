@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.5.0...v0.6.0) (2026-10-15)
+
+
+### Features
+
+* support Sphinx 8.2 ([#54](https://github.com/r4sky0/sphinx-java-autodoc/issues/54)) ([cde6519](https://github.com/r4sky0/sphinx-java-autodoc/commit/cde6519e44d10f73a2a409fd84af1156fd447be5))
+
 ## [0.5.0](https://github.com/r4sky0/sphinx-java-autodoc/compare/v0.4.0...v0.5.0) (2026-10-14)
 
 
